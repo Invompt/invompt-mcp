@@ -1,0 +1,3 @@
+export const ISSUER_IDENTITY_INSTRUCTION = 'issuer may be omitted; never invent issuer identity'
+
+export const GUEST_MCP_INSTRUCTIONS = `Use the live MCP tool schemas as the capability authority for the connected guest or account. Phase 1 has 15 operational tools; approve_account_claim is a discovery-only Phase 2 placeholder and must not be called. ${ISSUER_IDENTITY_INSTRUCTION} Omit every unknown identity field instead of synthesizing a placeholder. If get_invoice reports no active hosted link, use renew_invoice_link with a stable idempotency key; renewal replaces the public link without revising the invoice.`

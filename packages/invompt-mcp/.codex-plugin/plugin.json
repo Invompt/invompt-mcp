@@ -1,0 +1,39 @@
+{
+  "name": "invompt-mcp",
+  "version": "0.10.0",
+  "description": "Create and manage saved clients, invoices, quotes, estimates, and pro formas from natural-language requests in any language.",
+  "author": {
+    "name": "Invompt",
+    "url": "https://invompt.com"
+  },
+  "homepage": "https://invompt.com/integrations",
+  "repository": "https://github.com/Invompt/invompt-mcp",
+  "license": "MIT",
+  "keywords": [
+    "invoice",
+    "quote",
+    "estimate",
+    "billing",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Invompt",
+    "shortDescription": "Manage clients and invoices from natural language",
+    "longDescription": "Turn billing requests in any language into hosted Invompt invoices, quotes, estimates, and pro formas; search and manage saved clients; then retrieve, update, or archive documents through the Invompt MCP server.",
+    "developerName": "Invompt",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://invompt.com",
+    "defaultPrompt": [
+      "Create an invoice from these line items",
+      "Turn this scope into a professional quote",
+      "Show my latest invoices",
+      "Create an invoice for a saved client"
+    ],
+    "brandColor": "#6B8F71"
+  }
+}

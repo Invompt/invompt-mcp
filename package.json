@@ -1,0 +1,28 @@
+{
+  "name": "invompt-mcp-workspace",
+  "private": true,
+  "version": "0.10.0",
+  "packageManager": "npm@11.11.0",
+  "repository": { "type": "git", "url": "https://github.com/Invompt/invompt-mcp.git" },
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm run build --workspace=@invompt/mcp-core && npm run build --workspace=@invompt/mcp-testkit && npm run build --workspace=invompt-mcp",
+    "typecheck": "npm run typecheck --workspace=@invompt/mcp-core && npm run typecheck --workspace=@invompt/mcp-testkit && npm run typecheck --workspace=invompt-mcp",
+    "lint": "npm run lint --workspace=invompt-mcp",
+    "test": "npm run test --workspace=@invompt/mcp-core && npm run test --workspace=invompt-mcp",
+    "check": "npm run build && npm run typecheck && npm run lint && npm run test && npm run privacy:scan && npm run verify:pack",
+    "verify:pack": "npm run verify:pack --workspace=invompt-mcp",
+    "privacy:scan": "node scripts/privacy-secret-scan.mjs --source",
+    "prepublishOnly": "npm run check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

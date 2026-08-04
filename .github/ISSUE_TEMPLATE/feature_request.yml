@@ -1,0 +1,22 @@
+name: Feature request
+description: Propose a focused improvement for the public-development bridge.
+title: "feature: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private endpoints, credentials, customer data, or real invoice content.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user-facing problem without production or support assumptions.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Explain the boundary, tests, and documentation impact.
+    validations:
+      required: true

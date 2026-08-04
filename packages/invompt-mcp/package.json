@@ -1,0 +1,47 @@
+{
+  "name": "invompt-mcp",
+  "mcpName": "com.invompt/invompt-mcp",
+  "version": "0.10.0",
+  "description": "Self-contained stdio bridge for the loopback Invompt MCP transport",
+  "type": "module",
+  "bin": { "invompt-mcp": "./dist/index.js" },
+  "repository": { "type": "git", "url": "https://github.com/Invompt/invompt-mcp.git" },
+  "homepage": "https://invompt.com/integrations",
+  "bugs": { "url": "https://github.com/Invompt/invompt-mcp/issues" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./contracts": { "types": "./dist/contracts.d.ts", "default": "./dist/contracts.js" }
+  },
+  "files": [
+    ".nvmrc", ".agents/skills", ".claude-plugin", ".codex-plugin", ".codex", ".cursor/rules",
+    "agents", "commands", "dist", "gemini-extension.json", "plugin.json", "qwen-extension.json",
+    "runtime-support.json", "skills", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": { "node": ">=18" },
+  "packageManager": "npm@11.11.0",
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "esbuild": "^0.28.1",
+    "zod": "^4.4.3"
+  },
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "build": "npm run clean && tsc --project tsconfig.json && esbuild src/index.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist/index.js && node scripts/verify-third-party-notices.mjs --check",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "format": "biome format --write src/ test/",
+    "lint": "biome check src/ test/ scripts/",
+    "lint:fix": "biome check --write src/ test/ scripts/",
+    "verify:pack": "node scripts/verify-pack.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run verify:pack"
+  },
+  "keywords": ["mcp", "mcp-server", "model-context-protocol", "invoice", "invoice-generator", "invoice-automation", "ai-invoicing", "ai-billing", "ai-tools", "ai-agent", "claude", "chatgpt", "codex", "copilot", "gemini", "qwen", "cursor", "opencode", "llm", "freelancer", "small-business", "accounting", "json", "guest"],
+  "author": { "name": "Invompt", "url": "https://invompt.com" },
+  "funding": { "url": "https://invompt.com" },
+  "license": "MIT"
+}

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Invompt/invompt-mcp/security/advisories/new
+    about: Use GitHub private vulnerability reporting. Do not include sensitive material in a public issue.

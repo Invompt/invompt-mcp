@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+*.tgz
+.env*
+.npmrc
+.DS_Store
+WORKSPACE_REGISTRY.json

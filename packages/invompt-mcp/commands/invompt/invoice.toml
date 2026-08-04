@@ -1,0 +1,13 @@
+description = "Create or manage an Invompt invoice, quote, estimate, or pro forma in any language"
+
+prompt = """
+Handle this request through the connected Invompt MCP server:
+
+{{args}}
+
+Activate the invompt-invoice skill, infer the requested document operation, reuse relevant
+conversation context, and call the matching MCP tool. Respond in the user's language and return
+the hosted Invompt URL after creation.
+For a named recipient, search saved clients first; ask when ambiguous or unmatched, and never
+silently save a client.
+"""

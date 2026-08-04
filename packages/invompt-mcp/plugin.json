@@ -1,0 +1,21 @@
+{
+  "name": "invompt",
+  "version": "0.10.0",
+  "description": "Create and manage professional invoices, quotes, estimates, and pro formas from natural-language requests in any language.",
+  "author": {
+    "name": "Invompt",
+    "url": "https://invompt.com"
+  },
+  "homepage": "https://invompt.com/integrations",
+  "repository": "https://github.com/Invompt/invompt-mcp",
+  "license": "MIT",
+  "keywords": [
+    "invoice",
+    "quote",
+    "estimate",
+    "billing",
+    "mcp"
+  ],
+  "agents": "./agents/",
+  "skills": "./skills/"
+}

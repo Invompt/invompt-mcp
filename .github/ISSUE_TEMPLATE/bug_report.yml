@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible defect in the public-development bridge.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, customer data, or real invoice content. Use private vulnerability reporting for security issues.
+  - type: input
+    id: version
+    attributes:
+      label: Candidate revision or package integrity
+      description: Provide a commit, tag, or independently verified tarball integrity.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include redacted commands, expected behavior, and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node/npm versions and host runtime, without secrets.
+    validations:
+      required: true

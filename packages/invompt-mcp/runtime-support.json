@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "canonicalHosts": {
+    "localMcp": "http://localhost:3101/mcp"
+  },
+  "transportPolicy": {
+    "default": "exact-loopback-mcp",
+    "optionalExplicitTrustedHttpsOrigins": true,
+    "rejects": ["wildcards", "paths", "credentials", "queries", "fragments", "redirects"]
+  },
+  "releaseChannel": {
+    "status": "public-development-pre-1.0",
+    "next": "development-only",
+    "externalRegistryVerificationRequired": true
+  },
+  "verificationContract": {
+    "scope": "source-repository",
+    "sourceCommand": "npm run verify:pack",
+    "successStatus": "passed"
+  },
+  "runtimes": [
+    { "id": "claude-code", "artifact": ".claude-plugin/plugin.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" },
+    { "id": "codex", "artifact": ".codex-plugin/plugin.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" },
+    { "id": "gemini-cli", "artifact": "gemini-extension.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" },
+    { "id": "qwen-code", "artifact": "qwen-extension.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" }
+  ],
+  "surfaces": [
+    { "id": "stdio-bridge", "artifact": "dist/index.js", "sourceVerificationCommand": "npm run verify:pack", "status": "package-contract-verified", "boundary": "package" }
+  ]
+}
