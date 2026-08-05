@@ -18,12 +18,18 @@ calculation, rendering, persistence, and hosted links.
 ## Install
 
 ```sh
+npm install --global invompt-mcp@next
+```
+
+This installs the `invompt-mcp` executable used by host configuration. For a local library
+dependency instead, use:
+
+```sh
 npm install invompt-mcp@next
 ```
 
-The package installs the `invompt-mcp` executable and can also be imported as a library. The host
-must be configured through the official Invompt setup flow before starting the bridge; this README
-does not contain endpoint or credential material.
+The host must be configured through the official Invompt setup flow before starting the bridge;
+this README does not contain endpoint or credential material.
 
 ## Quick start
 
