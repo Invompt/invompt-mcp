@@ -11,7 +11,7 @@ forwards MCP JSON-RPC messages once. It does not execute invoice tools, make RES
 database, or open a network listener. Product code owns invoice rules, InvoML validation and
 calculation, rendering, persistence, and hosted links.
 
-> **Prerelease:** version `0.10.0` is a public-development, pre-1.0 release on the `next` channel.
+> **Prerelease:** version `0.10.1` is a public-development, pre-1.0 release for the `next` channel.
 > Use `@next` explicitly. `latest` currently points to retired `0.4.1` and must not be used for
 > this package.
 

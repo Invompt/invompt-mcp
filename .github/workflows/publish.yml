@@ -3,7 +3,7 @@ name: Publish invompt-mcp
 on:
   push:
     tags:
-      - v0.10.0
+      - v0.10.1
   workflow_dispatch:
 
 permissions:
@@ -12,7 +12,7 @@ permissions:
 jobs:
   build_and_verify:
     name: Build, test, verify, and pack
-    if: github.ref == 'refs/tags/v0.10.0'
+    if: github.ref == 'refs/tags/v0.10.1'
     runs-on: ubuntu-latest
 
     steps:
@@ -27,8 +27,8 @@ jobs:
 
       - run: npm install --global npm@11.11.0
       - run: test "$(node --version)" = "v22.22.0" && test "$(npm --version)" = "11.11.0"
-      - run: test "${GITHUB_REF_NAME}" = "v0.10.0" && test "$(git describe --tags --exact-match)" = "v0.10.0"
-      - run: test "$(node -p 'require("./packages/invompt-mcp/package.json").version')" = "0.10.0"
+      - run: test "${GITHUB_REF_NAME}" = "v0.10.1" && test "$(git describe --tags --exact-match)" = "v0.10.1"
+      - run: test "$(node -p 'require("./packages/invompt-mcp/package.json").version')" = "0.10.1"
       - run: npm ci
       - run: npm run check
 
@@ -59,7 +59,7 @@ jobs:
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: invompt-mcp-0.10.0
+          name: invompt-mcp-0.10.1
           path: release-artifacts
           if-no-files-found: error
           retention-days: 1
@@ -67,7 +67,7 @@ jobs:
   publish:
     name: Publish verified npm artifact
     needs: build_and_verify
-    if: github.ref == 'refs/tags/v0.10.0'
+    if: github.ref == 'refs/tags/v0.10.1'
     runs-on: ubuntu-latest
     environment: npm
     permissions:
@@ -85,15 +85,15 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: invompt-mcp-0.10.0
+          name: invompt-mcp-0.10.1
           path: release-artifacts
 
       - name: Verify isolated artifact identity and digests
         run: |
-          node -e "const fs=require('node:fs'); const crypto=require('node:crypto'); const m=JSON.parse(fs.readFileSync('release-artifacts/release-metadata.json','utf8')); const integrity='sha512-'+crypto.createHash('sha512').update(fs.readFileSync('release-artifacts/invompt-mcp-0.10.0.tgz')).digest('base64'); if (m.name!=='invompt-mcp'||m.version!=='0.10.0'||m.filename!=='invompt-mcp-0.10.0.tgz'||m.integrity!==integrity) process.exit(1)"
+          node -e "const fs=require('node:fs'); const crypto=require('node:crypto'); const m=JSON.parse(fs.readFileSync('release-artifacts/release-metadata.json','utf8')); const integrity='sha512-'+crypto.createHash('sha512').update(fs.readFileSync('release-artifacts/invompt-mcp-0.10.1.tgz')).digest('base64'); if (m.name!=='invompt-mcp'||m.version!=='0.10.1'||m.filename!=='invompt-mcp-0.10.1.tgz'||m.integrity!==integrity) process.exit(1)"
           test "$(find release-artifacts -maxdepth 1 -name '*.tgz' -type f | wc -l | tr -d ' ')" = "1"
           sha256sum --check release-artifacts/SHA256SUMS
           sha512sum --check release-artifacts/SHA512SUMS
 
       - name: Publish trusted artifact
-        run: npm publish ./release-artifacts/invompt-mcp-0.10.0.tgz --access public --tag next --ignore-scripts
+        run: npm publish ./release-artifacts/invompt-mcp-0.10.1.tgz --access public --tag next --ignore-scripts

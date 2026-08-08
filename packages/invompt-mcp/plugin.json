@@ -1,6 +1,6 @@
 {
   "name": "invompt",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Create and manage professional invoices, quotes, estimates, and pro formas from natural-language requests in any language.",
   "author": {
     "name": "Invompt",

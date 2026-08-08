@@ -23,6 +23,6 @@ The check builds each workspace, typechecks, lints, tests, scans tracked and pac
 
 ## Release boundary
 
-Only `invompt-mcp` may be published. The release workflow accepts only the exact `v0.10.0` tag, rejects an already-published `invompt-mcp@0.10.0`, validates one build/test/pack artifact, verifies its SHA-256 and SHA-512 after isolated download, and uses npm trusted publishing through the GitHub Actions `npm` environment. Publishing remains an external authorization and is not performed by local validation.
+Only `invompt-mcp` may be published. The release workflow accepts only the exact `v0.10.1` tag, rejects an already-published `invompt-mcp@0.10.1`, validates one build/test/pack artifact, verifies its SHA-256 and SHA-512 after isolated download, and uses npm trusted publishing through the GitHub Actions `npm` environment. Publishing remains an external authorization and is not performed by local validation.
 
 See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
