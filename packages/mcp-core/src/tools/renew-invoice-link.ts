@@ -18,7 +18,7 @@ export function registerRenewInvoiceLinkTool(server: McpServer, client: InvomptS
     {
       title: 'Renew Invoice Link',
       description:
-        'Issue a replacement 72-hour hosted review link for an existing invoice without creating or revising the invoice. The previous public link is revoked. Available to guest and managed accounts.',
+        'Issue a replacement 72-hour hosted review link for an existing invoice without creating or revising the invoice. The previous public link is revoked when the connected service supports renewal.',
       outputSchema: renewInvoiceLinkOutputSchema,
       inputSchema: {
         id: z.string().min(1).describe('Invoice ID'),

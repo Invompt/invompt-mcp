@@ -31,7 +31,7 @@ export function registerGetInvoiceTool(server: McpServer, client: InvomptService
     {
       title: 'Get Invoice',
       description:
-        'Get, retrieve, open, or inspect one invoice owned by the connected account or guest company with its full InvoML content. Use the returned InvoML for revisions, translations, duplication, or as a template.',
+        'Get, retrieve, open, or inspect one invoice owned by the connected workspace with its full InvoML content. Use the returned InvoML for revisions, translations, duplication, or as a template.',
       outputSchema: getInvoiceOutputSchema,
       inputSchema: {
         id: z.string().min(1).describe('Invoice ID'),

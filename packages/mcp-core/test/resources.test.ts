@@ -80,7 +80,11 @@ describe('getting-started resource', () => {
     const text = result.contents[0]?.text ?? ''
     expect(text).toContain('Invompt')
     expect(text).toContain('get_settings')
-    expect(text).toContain('Guest MCP')
+    expect(text).toContain('Maintained public Phase 1 hosts')
+    expect(text).toContain('Guest credential')
+    expect(text).toContain('Authentication material is supplied by the configured private adapter')
+    expect(text).not.toContain('INVOMPT_GUEST_CREDENTIAL')
+    expect(text).not.toContain('~/.invompt/')
     expect(text).toContain('Never invent issuer identity')
     expect(text).toContain("user's language")
     expect(text).toContain('Never invent currency')

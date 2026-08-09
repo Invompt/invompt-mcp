@@ -29,14 +29,17 @@ schemas remain final if the connected server exposes a newer compatible surface.
 | Revise, translate, correct, or restyle an existing document | Use `update_invoice` when exposed. |
 | Renew an expired hosted link | Use `renew_invoice_link` when exposed. |
 | Archive an existing document | Confirm the target and authorization, then use `archive_invoice`. |
-| Read account defaults | Use `get_settings` only when exposed and account defaults matter. |
-| Change account defaults | Use `update_settings` with only user-supplied fields and a stable idempotency key. |
+| Read invoice defaults | Use `get_settings` only when exposed and invoice defaults matter. |
+| Change invoice defaults | Use `update_settings` with only user-supplied fields and a stable idempotency key. |
 | Find or manage saved clients | Use `list_clients`, `get_client`, `create_client`, `update_client`, or `archive_client` when exposed. |
 | Check connection | Use `ping`; do not call it as a normal creation preflight. |
 
 Treat live MCP tool and resource schemas as the final capability contract. If a management tool is
-not exposed for the current guest or account connection, report that capability gap without
+not exposed for the current adapter context, report that capability gap without
 creating a duplicate or switching to another artifact tool.
+
+Public Phase 1 is Guest-only; account-auth and account-claim setup are owned by
+the private adapter and are not capabilities of this package.
 
 Phase 1 has 15 operational tools. `approve_account_claim` is discovery-only and
 deferred to Phase 2; do not call it even when it appears in discovery.

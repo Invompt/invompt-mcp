@@ -31,7 +31,7 @@ export function registerUpdateSettingsTool(server: McpServer, client: InvomptSer
     {
       title: 'Update Settings',
       description:
-        'Partially update saved invoice defaults for the connected account or guest company. Omitted fields remain unchanged; company name and currency may be explicitly cleared with null. Returns the complete canonical settings after the update.',
+        'Partially update saved invoice defaults for the connected workspace. Omitted fields remain unchanged; company name and currency may be explicitly cleared with null. Returns the complete canonical settings after the update.',
       inputSchema: {
         companyName: z.string().trim().min(1).max(200).nullable().optional(),
         currency: z.string().trim().min(1).max(3).nullable().optional(),

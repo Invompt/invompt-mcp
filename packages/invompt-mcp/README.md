@@ -1,94 +1,80 @@
-# invompt-mcp
+# Invompt MCP
 
-[![npm](https://img.shields.io/npm/v/invompt-mcp?style=flat-square)](https://www.npmjs.com/package/invompt-mcp)
-[![CI](https://img.shields.io/github/actions/workflow/status/Invompt/invompt-mcp/ci.yml?style=flat-square)](https://github.com/Invompt/invompt-mcp/actions)
+[![npm next](https://img.shields.io/npm/v/invompt-mcp/next?style=flat-square&label=npm%20next)](https://www.npmjs.com/package/invompt-mcp)
+[![CI](https://img.shields.io/github/actions/workflow/status/Invompt/invompt-mcp/ci.yml?style=flat-square&label=tests)](https://github.com/Invompt/invompt-mcp/actions)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-**A self-contained stdio bridge for an Invompt MCP connection.**
+**Bring Invompt invoice tools into MCP-compatible AI clients.**
 
-`invompt-mcp` connects a host's stdio MCP transport to the configured Invompt MCP service. It
-forwards MCP JSON-RPC messages once. It does not execute invoice tools, make REST calls, access a
-database, or open a network listener. Product code owns invoice rules, InvoML validation and
-calculation, rendering, persistence, and hosted links.
+`invompt-mcp` is a self-contained stdio bridge between an MCP client and a configured Invompt MCP
+service. It forwards MCP JSON-RPC messages without moving invoice business logic into the client.
 
-> **Prerelease:** version `0.10.1` is a public-development, pre-1.0 release for the `next` channel.
-> Use `@next` explicitly. `latest` currently points to retired `0.4.1` and must not be used for
-> this package.
+> **Prerelease:** this public-development, pre-1.0 source declares version `0.10.2` for the
+> `next` channel. Verify live registry state before relying on it. Operational Phase 1 is
+> supported only through maintained private adapter configuration and direct transport.
 
-## Install
+## Installation
 
-```sh
-npm install --global invompt-mcp@next
-```
+There is no supported external registry installation flow in Phase 1. Maintained hosts use the
+private adapter configuration and direct transport. The npm tarball on `next` is an audit and
+distribution artifact, not a public setup contract.
 
-This installs the `invompt-mcp` executable used by host configuration. For a local library
-dependency instead, use:
+Node.js 18 or newer is required.
 
-```sh
-npm install invompt-mcp@next
-```
+## Maintained runtime shape
 
-The host must be configured through the official Invompt setup flow before starting the bridge;
-this README does not contain endpoint or credential material.
-
-## Quick start
-
-Add the executable to the MCP host configuration used by your client:
-
-```json
-{
-  "mcpServers": {
-    "invompt": {
-      "command": "invompt-mcp"
-    }
-  }
-}
-```
-
-Start it directly when the host is already configured:
-
-```sh
-invompt-mcp
-```
-
-The bridge's default implementation target is the exact local transport
-`http://localhost:3101/mcp`. This is a local host boundary, not a public service URL; remote use
-requires an exact trusted origin and redirects are rejected.
-
-## What is included
-
-The published package is intentionally narrow:
-
-- A self-contained `invompt-mcp` stdio executable.
-- `startBridge()` and the transport/origin policy helpers from the root export.
-- The `invompt-mcp/contracts` subpath for the shared MCP instructions.
-- Host manifests, selected skills and commands, licensing, and third-party notices.
-
-The public bridge has **no runtime dependencies** and does not import the workspace core at
-runtime. `@invompt/mcp-core` and `@invompt/mcp-testkit` remain private workspace source for the
-transport-neutral contract and test fakes; they are not npm install targets.
-
-The bridge does not execute invoice tools. It only connects the host transport to the configured
-MCP service, where the product owns the business operations.
-
-## Architecture
+The private host configurator owns executable discovery and credential materialization. The bridge
+connects to `http://localhost:3101/mcp` by default. Do not construct a launch manifest or copy a
+Guest credential from the public artifact.
 
 ```text
-MCP client host  →  invompt-mcp stdio bridge  →  configured Invompt MCP service
-                                               →  product-owned invoice operations
+MCP client  →  invompt-mcp  →  configured Invompt MCP service  →  invoice operations
 ```
 
-The package is not the private server, does not replace the product, and does not provide a public
-HTTP endpoint.
+## What the bridge does
 
-## Security
+- Connects stdio-based MCP clients to Invompt's Streamable HTTP transport.
+- Forwards each JSON-RPC message once in either direction.
+- Exposes `startBridge()` for programmatic integrations.
+- Ships host manifests, agent skills, and shared MCP instructions in one package.
+- Runs with no runtime dependencies after bundling.
 
-- Use the official host setup to provision authentication; never place credentials in this README,
-  source code, or a launch manifest.
-- The bridge accepts only the fixed local transport by default or an explicitly trusted exact HTTPS
-  origin.
-- Wildcards, paths, credentials, queries, fragments, and redirects are rejected for remote origins.
-- The package contains no invoice database client, REST fallback, or product business logic.
+## What it does not do
+
+The bridge does not execute invoice tools, make REST calls, access a database, or open a network
+listener. Invompt owns invoice rules, InvoML validation and calculation, rendering, persistence,
+and hosted document links.
+
+The package is not the Invompt server and does not provide a public HTTP endpoint.
+
+## Auditable library surface
+
+```ts
+import { startBridge } from 'invompt-mcp'
+
+// Maintainer-owned host configuration calls this after establishing private configuration.
+await startBridge()
+```
+
+The root export also includes transport policy and Guest credential helpers for maintained hosts.
+Shared MCP instructions are available from `invompt-mcp/contracts`. These exports document the
+artifact boundary; they do not establish a supported external setup flow.
+
+## Security model
+
+- The fixed loopback transport at `http://localhost:3101/mcp` is allowed by default.
+- Remote transports require an explicitly trusted, exact HTTPS origin.
+- Wildcards, paths, credentials, queries, fragments, and redirects are rejected.
+- Credentials stay in the official host setup; do not place them in source code or launch
+  manifests.
+- There is no invoice database client, REST fallback, or product business logic in the package.
+
+## Package contents
+
+The npm package intentionally contains only the public bridge and its portable host assets.
+`@invompt/mcp-core` and `@invompt/mcp-testkit` are private workspace packages used to compose and
+verify the transport-neutral contract; they are not npm install targets.
 
 ## Development
 
@@ -99,15 +85,19 @@ npm ci
 npm run check
 ```
 
-`npm run check` builds the workspaces, runs type, lint, test, privacy, package-content, and
-isolated tarball checks. The packaged README is checked as part of the release contract. Local
-source checks do not prove external registry availability or host compatibility.
+`npm run check` builds every workspace and runs type, lint, test, privacy, package-content, and
+isolated tarball checks. Local source checks do not prove external registry availability or host compatibility.
 
-The `next` channel is for development builds and is not a production channel or support promise.
+The `next` channel contains development builds and is not a production channel or support promise.
 
-## License and contribution
+## Resources
 
-- [MIT License](LICENSE)
+- [Invompt integrations](https://invompt.com/integrations)
+- [Source repository](https://github.com/Invompt/invompt-mcp)
 - [Contributing guide](https://github.com/Invompt/invompt-mcp/blob/main/CONTRIBUTING.md)
 - [Security policy](https://github.com/Invompt/invompt-mcp/blob/main/SECURITY.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
+
+## License
+
+[MIT](LICENSE)

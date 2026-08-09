@@ -26,7 +26,7 @@ export function registerUpdateInvoiceTool(server: McpServer, client: InvomptServ
     {
       title: 'Update Invoice',
       description:
-        'Update, revise, correct, translate, restyle, or explicitly resync a saved client onto an existing invoice owned by the connected account or guest company. clientId omitted retains the link without resync; null detaches the link but keeps the current recipient snapshot; a UUID assigns that company-owned client and rebuilds this invoice snapshot. Client edits never rewrite historical invoices automatically.',
+        'Update, revise, correct, translate, restyle, or explicitly resync a saved client onto an existing invoice owned by the connected workspace. clientId omitted retains the link without resync; null detaches the link but keeps the current recipient snapshot; a UUID assigns that workspace-owned client and rebuilds this invoice snapshot. Client edits never rewrite historical invoices automatically.',
       outputSchema: updateInvoiceOutputSchema,
       inputSchema: {
         id: z.string().min(1).describe('Invoice ID'),

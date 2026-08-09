@@ -26,7 +26,7 @@ export function registerGetSettingsTool(server: McpServer, client: InvomptServic
     {
       title: 'Get Settings',
       description:
-        'Get saved invoice defaults for the connected account or guest company: optional company name, currency, invoice prefix, numbering format, default due date, sender info, and payment terms.',
+        'Get saved invoice defaults for the connected workspace: optional company name, currency, invoice prefix, numbering format, default due date, sender info, and payment terms.',
       outputSchema: getSettingsOutputSchema,
       inputSchema: {},
       annotations: {

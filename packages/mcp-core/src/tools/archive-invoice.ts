@@ -18,7 +18,7 @@ export function registerArchiveInvoiceTool(server: McpServer, client: InvomptSer
     {
       title: 'Archive Invoice',
       description:
-        'Archive, remove from active lists, or soft-delete a clearly identified invoice owned by the connected account or guest company. The invoice remains viewable; financial documents are never permanently deleted.',
+        'Archive, remove from active lists, or soft-delete a clearly identified invoice owned by the connected workspace. The invoice remains viewable; financial documents are never permanently deleted.',
       outputSchema: archiveInvoiceOutputSchema,
       inputSchema: {
         id: z.string().min(1).describe('Invoice ID'),

@@ -25,7 +25,7 @@ export function registerPingTool(server: McpServer, client: InvomptService): voi
     'ping',
     {
       title: 'Ping',
-      description: 'Check API connectivity and the connected account or guest-company status.',
+      description: 'Check API connectivity and the connected workspace status.',
       outputSchema: pingOutputSchema,
       inputSchema: {},
       annotations: {

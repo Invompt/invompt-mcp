@@ -68,6 +68,24 @@ const EXPECTED_SURFACES = [
   },
 ]
 
+const OPERATIONAL_TOOL_SOURCES = Object.freeze([
+  ['../mcp-core/src/tools/ping.ts', 'ping'],
+  ['../mcp-core/src/tools/create-invoice.ts', 'create_invoice'],
+  ['../mcp-core/src/tools/list-invoices.ts', 'list_invoices'],
+  ['../mcp-core/src/tools/get-invoice.ts', 'get_invoice'],
+  ['../mcp-core/src/tools/update-invoice.ts', 'update_invoice'],
+  ['../mcp-core/src/tools/archive-invoice.ts', 'archive_invoice'],
+  ['../mcp-core/src/tools/unarchive-invoice.ts', 'unarchive_invoice'],
+  ['../mcp-core/src/tools/renew-invoice-link.ts', 'renew_invoice_link'],
+  ['../mcp-core/src/tools/get-settings.ts', 'get_settings'],
+  ['../mcp-core/src/tools/update-settings.ts', 'update_settings'],
+  ['../mcp-core/src/tools/list-clients.ts', 'list_clients'],
+  ['../mcp-core/src/tools/get-client.ts', 'get_client'],
+  ['../mcp-core/src/tools/create-client.ts', 'create_client'],
+  ['../mcp-core/src/tools/update-client.ts', 'update_client'],
+  ['../mcp-core/src/tools/archive-client.ts', 'archive_client'],
+])
+
 const RETIRED_PACKED_ASSETS = ['.mcp.json', '.cursor/mcp.json', 'server.json']
 
 export function verifyPackContract({
@@ -224,6 +242,8 @@ export function verifyPackContract({
   assert(readme.includes('public-development, pre-1.0'), 'packaged README states the public-development pre-1.0 status')
   assert(readme.includes('http://localhost:3101/mcp'), 'packaged README limits the bridge to the exact loopback transport')
   assert(readme.includes('does not execute invoice tools') && readme.includes('no runtime dependencies'), 'packaged README limits bridge responsibility and dependencies')
+  assert(readme.includes('no supported external registry installation flow'), 'packaged README advertises no external Phase 1 registry setup')
+  assert(readme.includes('Verify live registry state'), 'packaged README treats registry state as externally verified')
   assert(readme.includes('external registry availability or host compatibility'), 'packaged README makes no unverified installation claim')
   assert(readme.includes('development builds') && readme.includes('not a production channel'), 'packaged README limits next to development use')
   assert(readText('THIRD_PARTY_NOTICES.md').includes('@modelcontextprotocol/sdk@1.30.0'), 'packed package includes deterministic bundled third-party notices')
@@ -231,6 +251,8 @@ export function verifyPackContract({
   const gettingStartedSource = readText('../mcp-core/src/resources/getting-started.ts')
   assert(!gettingStartedSource.includes('API key'), 'getting-started resource advertises no API-key setup')
   assert(!gettingStartedSource.includes('invompt.com/integrations'), 'getting-started resource advertises no account setup URL')
+  assert(!gettingStartedSource.includes('INVOMPT_GUEST_CREDENTIAL'), 'getting-started resource exposes no credential materialization instructions')
+  assert(!gettingStartedSource.includes('~/.invompt/'), 'getting-started resource exposes no private credential path')
   assert(
     gettingStartedSource.includes('Phase 1 exposes 15 operational') &&
       gettingStartedSource.includes('discovery-only Phase 2') &&
@@ -250,6 +272,28 @@ export function verifyPackContract({
   const surfaceMirror = readText('.agents/skills/invompt-invoice/references/mcp-surface.md')
   assert(skillSource === skillMirror, 'packaged skill and generated agent mirror are byte-identical')
   assert(surfaceSource === surfaceMirror, 'packaged MCP reference and generated agent mirror are byte-identical')
+  assert(
+    skillSource.includes('Public Phase 1 is Guest-only') &&
+      skillSource.includes('private adapter'),
+    'packaged skill describes Phase 1 as Guest-only and account flows as private adapter-owned',
+  )
+  assert(
+    surfaceSource.includes('Public Phase 1 deployment is Guest-only') &&
+      surfaceSource.includes('private adapter'),
+    'packaged MCP reference marks public Phase 1 as Guest-only and private-adapter-owned account auth',
+  )
+  assert(OPERATIONAL_TOOL_SOURCES.length === 15, 'pack-contract inspects the exact 15 operational tool sources')
+  for (const [path, toolName] of OPERATIONAL_TOOL_SOURCES) {
+    const contents = readText(path)
+    assert(
+      contents.includes(`'${toolName}'`) || contents.includes(`\"${toolName}\"`),
+      `${path} exposes operational tool registration for ${toolName}`,
+    )
+    assert(
+      !/connected Guest workspace|guest or account|account or guest|guest-company/i.test(contents),
+      `${path} remains authentication-neutral for adapter composition`,
+    )
+  }
   for (const [path, contents] of [
     ['skills/invompt-invoice/SKILL.md', skillSource],
     ['skills/invompt-invoice/references/mcp-surface.md', surfaceSource],

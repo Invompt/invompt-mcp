@@ -1,6 +1,6 @@
 {
   "name": "invompt-mcp",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Create and manage saved clients, invoices, quotes, estimates, and pro formas from natural-language requests in any language.",
   "author": {
     "name": "Invompt",

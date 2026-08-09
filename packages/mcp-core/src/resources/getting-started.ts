@@ -17,9 +17,10 @@ access to the invoicing workflow.
 2. Read the InvoML spec (invompt://spec/invoml/v1) — understand the Invoice
    Markup Language JSON format.
 
-3. When defaults matter and get_settings is exposed, read the connected
-   account or guest-company currency, invoice prefix, and payment terms. When
-   the user asks to change defaults, call update_settings with only the fields
+3. When defaults matter and get_settings is exposed, read the connected adapter
+   workspace currency, invoice prefix, and payment terms. In public Phase 1 this is
+   the Guest mode; private account-mode authentication is handled by the adapter
+   layer. When the user asks to change defaults, call update_settings with only the fields
    they supplied and a stable 8–128 character idempotencyKey. Omitted settings
    stay unchanged; explicit null clears company name or currency.
 
@@ -87,8 +88,10 @@ access to the invoicing workflow.
   approve_account_claim schema remains visible only as a discovery-only Phase 2
   placeholder; it is not operational and must not be called in Phase 1.
 
-- Guest MCP capabilities are defined by the live operational tool schemas. The
-  same machine guest credential is shared across supported hosts.
+- Public Phase 1 MCP capabilities are defined by the live operational tool schemas.
+  In this phase, this is Guest mode and registered-account setup remains in the
+  private adapter layer; the same machine guest credential is shared across
+  supported Phase 1 hosts.
 
 ## Tips
 
@@ -104,11 +107,13 @@ access to the invoicing workflow.
 - Treat meta.number as final authored data. If a final document number is
   missing, ask for it; never persist a made-up sequential or DRAFT number.
 
-## Account & Setup
+## Adapter-Owned Setup
 
-Guest MCP uses the server-issued credential at ~/.invompt/guest-credential or
-INVOMPT_GUEST_CREDENTIAL. Registered-account and account-claim setup are not
-part of the Phase 1 MCP package.
+Authentication material is supplied by the configured private adapter, not by
+this transport-neutral core or an invoice tool. Maintained public Phase 1 hosts
+use a server-issued Guest credential; agents must never discover, copy, print,
+or synthesize it. Registered-account and account-claim setup are not operational
+in the supported public Phase 1 deployment.
 `
 
 export function registerGettingStartedResource(server: McpServer): void {

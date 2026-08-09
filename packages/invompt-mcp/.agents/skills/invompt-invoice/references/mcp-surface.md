@@ -6,11 +6,15 @@ Use the tool schemas exposed by the connected server as the final authority. The
 Phase 1 has 15 operational tools. `approve_account_claim` is retained only as a discovery-only
 Phase 2 placeholder; it is not operational and must not be called.
 
+Public Phase 1 deployment is Guest-only. Registered-account setup and account-claim
+execution are not capabilities of this package; authentication for those workflows
+is owned by the private adapter layer.
+
 ## Resources
 
 | Name | Resource | Use |
 |---|---|---|
-| `getting-started` | `invompt://docs/getting-started` | Read the recommended workflow and account model. |
+| `getting-started` | `invompt://docs/getting-started` | Read the recommended workflow and public Phase 1 access model. |
 | `invoml-spec` | `invompt://spec/invoml/v1` | Read the live InvoML contract before drafting. |
 
 ## Prompt
@@ -23,22 +27,22 @@ Phase 2 placeholder; it is not operational and must not be called.
 
 | Tool | Authentication | Mutability | Use |
 |---|---|---|---|
-| `ping` | Guest or account | Read-only | Connectivity and connected workspace state. |
-| `create_invoice` | Guest or account | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, URL, and version. |
-| `list_invoices` | Guest or account | Read-only | Search and page through owned invoices. |
-| `get_invoice` | Guest or account | Read-only | Retrieve full canonical InvoML. |
-| `update_invoice` | Guest or account | Idempotent update | Change content or template with expected-version protection, then return the canonical active hosted URL from authorized read-back; use the explicit audited correction object only to repair a wrong persisted number. |
-| `archive_invoice` | Guest or account | Idempotent destructive soft delete | Archive with expected-version protection. |
-| `unarchive_invoice` | Guest or account | Idempotent restore | Restore an archived invoice with expected-version protection. |
-| `renew_invoice_link` | Guest or account | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
+| `ping` | Guest | Read-only | Connectivity and connected workspace state. |
+| `create_invoice` | Guest | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, URL, and version. |
+| `list_invoices` | Guest | Read-only | Search and page through owned invoices. |
+| `get_invoice` | Guest | Read-only | Retrieve full canonical InvoML. |
+| `update_invoice` | Guest | Idempotent update | Change content or template with expected-version protection, then return the canonical active hosted URL from authorized read-back; use the explicit audited correction object only to repair a wrong persisted number. |
+| `archive_invoice` | Guest | Idempotent destructive soft delete | Archive with expected-version protection. |
+| `unarchive_invoice` | Guest | Idempotent restore | Restore an archived invoice with expected-version protection. |
+| `renew_invoice_link` | Guest | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
 | `approve_account_claim` | Phase 2 only | Discovery-only, non-operational | Do not call in Phase 1; account-claim execution is deferred to Phase 2. |
-| `get_settings` | Guest or account | Read-only | Read company, currency, numbering, and payment defaults. |
-| `update_settings` | Guest or account | Idempotent update | Partially update invoice defaults without inventing omitted values. |
-| `list_clients` | Guest or account | Read-only | Search saved clients and receive deterministic exact/ambiguous/none resolution. |
-| `get_client` | Guest or account | Read-only | Read one structured billing party without private notes or rich HTML. |
-| `create_client` | Guest or account | Idempotent create | Explicitly save after user choice; protect against unconfirmed duplicates. |
-| `update_client` | Guest or account | Idempotent update | Partially edit with expected-version conflict protection. |
-| `archive_client` | Guest or account | Destructive soft delete | Archive after explicit confirmation; preserve invoice history. |
+| `get_settings` | Guest | Read-only | Read company, currency, numbering, and payment defaults. |
+| `update_settings` | Guest | Idempotent update | Partially update invoice defaults without inventing omitted values. |
+| `list_clients` | Guest | Read-only | Search saved clients and receive deterministic exact/ambiguous/none resolution. |
+| `get_client` | Guest | Read-only | Read one structured billing party without private notes or rich HTML. |
+| `create_client` | Guest | Idempotent create | Explicitly save after user choice; protect against unconfirmed duplicates. |
+| `update_client` | Guest | Idempotent update | Partially edit with expected-version conflict protection. |
+| `archive_client` | Guest | Destructive soft delete | Archive after explicit confirmation; preserve invoice history. |
 
 For a named recipient, search saved clients first. Auto-select only an exact unique match. Ask the
 user to choose among multiple matches. With no match, ask one question offering save-and-assign or

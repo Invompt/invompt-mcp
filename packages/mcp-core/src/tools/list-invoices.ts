@@ -32,7 +32,7 @@ export function registerListInvoicesTool(server: McpServer, client: InvomptServi
     {
       title: 'List Invoices',
       description:
-        'Find, browse, show, search, or list invoices owned by the connected account or guest company. Returns summaries with invoice number, client, total, currency, status, and whether it was sent. Use get_invoice for full InvoML content.',
+        'Find, browse, show, search, or list invoices owned by the connected workspace. Returns summaries with invoice number, client, total, currency, status, and whether it was sent. Use get_invoice for full InvoML content.',
       outputSchema: listInvoicesOutputSchema,
       inputSchema: {
         page: z.number().int().min(1).optional().describe('Page number (default 1)'),

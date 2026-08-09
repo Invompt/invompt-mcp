@@ -2,7 +2,7 @@
 
 ## Supported status
 
-This is public-development, pre-1.0 software. A release candidate and its checks do not establish production availability, support coverage, or a service-level commitment.
+This is public-development, pre-1.0 software. Published artifacts and checks support distribution and audit workflows; they do not establish production availability, support coverage, or a service-level commitment.
 
 ## Reporting a vulnerability
 
