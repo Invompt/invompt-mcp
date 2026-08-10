@@ -3,10 +3,10 @@ import { describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
 
 import { InvomptApiError } from '../src/error.js'
-import { registerApproveAccountClaimTool } from '../src/tools/approve-account-claim.js'
 import { registerArchiveInvoiceTool } from '../src/tools/archive-invoice.js'
 import { CANONICAL_INVOML_MAX_BYTES, canonicalInvomlSchema } from '../src/tools/client-schemas.js'
 import { registerCreateClientTool } from '../src/tools/create-client.js'
+import { registerCreateAccountClaimLinkTool } from '../src/tools/create-account-claim-link.js'
 import { registerCreateInvoiceTool } from '../src/tools/create-invoice.js'
 import { registerGetInvoiceTool } from '../src/tools/get-invoice.js'
 import { registerGetSettingsTool } from '../src/tools/get-settings.js'
@@ -977,51 +977,99 @@ test('presents guest invoice creation without commercial limit fields', async ()
   })
 })
 
-describe('approve_account_claim tool', () => {
-  const CLAIM_INTENT_ID = '123e4567-e89b-42d3-a456-426614174000'
-  const CLAIM_NONCE = Buffer.alloc(32, 3).toString('base64url')
-
-  test('registers a fail-closed Phase 2 discovery placeholder', async () => {
+describe('create_account_claim_link tool', () => {
+  test('registers an input-free, non-idempotent Guest claim-link mutation', async () => {
     const { server } = makeServerMock()
-    const approveAccountClaim = vi.fn()
-    const client = { approveAccountClaim } as unknown as Parameters<typeof registerApproveAccountClaimTool>[1]
-    registerApproveAccountClaimTool(server, client)
+    const claimResult = {
+      claimUrl: 'https://invompt.com/claim/example',
+      expiresAt: '2026-08-10T12:00:00.000Z',
+    }
+    const createAccountClaimLink = vi.fn().mockResolvedValue(claimResult)
+    const client = {
+      isGuest: () => true,
+      createAccountClaimLink,
+    } as unknown as Parameters<typeof registerCreateAccountClaimLinkTool>[1]
+    registerCreateAccountClaimLinkTool(server, client)
 
     const [name, config] = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0] as [
       string,
       {
         description: string
-        inputSchema: Record<string, { safeParse: (value: unknown) => { success: boolean } }>
+        inputSchema: Record<string, unknown>
+        outputSchema: Record<string, { safeParse: (value: unknown) => { success: boolean } }>
         annotations: Record<string, boolean>
       },
     ]
-    expect(name).toBe('approve_account_claim')
-    expect(Object.keys(config.inputSchema).sort()).toEqual(['intentId', 'nonce'])
-    expect(config.inputSchema.intentId?.safeParse(CLAIM_INTENT_ID).success).toBe(true)
-    expect(config.inputSchema.intentId?.safeParse('not-a-uuid').success).toBe(false)
-    expect(config.inputSchema.nonce?.safeParse(CLAIM_NONCE).success).toBe(true)
-    expect(config.inputSchema.nonce?.safeParse('short').success).toBe(false)
-    expect(config.description).toContain('Discovery-only Phase 2 placeholder')
-    expect(config.description).toContain('must not be called')
+    expect(name).toBe('create_account_claim_link')
+    expect(Object.keys(config.inputSchema)).toEqual([])
+    expect(Object.keys(config.outputSchema).sort()).toEqual(['claimUrl', 'expiresAt'].sort())
+    const credentialedClaimUrl = new URL('https://invompt.com/claim/example')
+    credentialedClaimUrl.username = 'attacker'
+    for (const url of [
+      claimResult.claimUrl,
+      'https://www.invompt.com/claim/example',
+      'https://invompt-git-branch-4riel.vercel.app/claim/example',
+      'https://invompt-preview-invo7.vercel.app/claim/example',
+      'http://localhost:3100/claim/example',
+      'https://localhost:3100/claim/example',
+      'http://127.0.0.1:3100/claim/example',
+      'https://[::1]:3100/claim/example',
+    ]) {
+      expect(config.outputSchema.claimUrl?.safeParse(url).success).toBe(true)
+    }
+    for (const url of [
+      'https://attacker.example/claim/example',
+      'https://invompt.com.attacker.example/claim/example',
+      'https://invompt-preview-attacker.vercel.app/claim/example',
+      credentialedClaimUrl.href,
+      'http://invompt.com/claim/example',
+      'http://localhost.attacker.example/claim/example',
+      'http://0.0.0.0:3100/claim/example',
+      'javascript:alert(1)',
+    ]) {
+      expect(config.outputSchema.claimUrl?.safeParse(url).success).toBe(false)
+    }
+    expect(config.outputSchema.expiresAt?.safeParse(claimResult.expiresAt).success).toBe(true)
+    expect(config.description).toContain('Guest-only')
+    expect(config.description).toContain('presented once')
     expect(config.annotations).toEqual(
       expect.objectContaining({
-        readOnlyHint: true,
+        readOnlyHint: false,
         destructiveHint: false,
-        idempotentHint: true,
+        idempotentHint: false,
         openWorldHint: false,
       }),
     )
     const handler = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as ToolHandler
-    const result = (await handler({
-      intentId: CLAIM_INTENT_ID,
-      nonce: CLAIM_NONCE,
-    })) as { content: Array<{ text: string }>; isError?: boolean }
+    const result = (await handler({})) as {
+      content: Array<{ text: string }>
+      structuredContent: typeof claimResult
+    }
+
+    expect(result.structuredContent).toEqual(claimResult)
+    expect(result.content[0]?.text).not.toContain(claimResult.claimUrl)
+    expect(result.content[0]?.text).toContain(claimResult.expiresAt)
+    expect(createAccountClaimLink).toHaveBeenCalledOnce()
+    expect(createAccountClaimLink).toHaveBeenCalledWith()
+  })
+
+  test('fails closed for OAuth without calling the claim service', async () => {
+    const { server } = makeServerMock()
+    const createAccountClaimLink = vi.fn()
+    const client = {
+      isGuest: () => false,
+      createAccountClaimLink,
+    } as unknown as Parameters<typeof registerCreateAccountClaimLinkTool>[1]
+    registerCreateAccountClaimLinkTool(server, client)
+
+    const handler = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as ToolHandler
+    const result = (await handler({})) as { content: Array<{ text: string }>; isError?: boolean }
 
     expect(parseToolErrorText(result).error).toEqual({
-      code: 'ACCOUNT_CLAIM_PHASE_2_DEFERRED',
-      message: 'approve_account_claim is discovery-only and unavailable until Phase 2.',
+      code: 'ACCOUNT_CLAIM_OAUTH_FORBIDDEN',
+      message: 'Account claim links are available only for active Guest workspaces.',
     })
-    expect(approveAccountClaim).not.toHaveBeenCalled()
+    expect(createAccountClaimLink).not.toHaveBeenCalled()
   })
 })
 

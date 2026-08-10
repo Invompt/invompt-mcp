@@ -4,14 +4,13 @@ import {
   EXPECTED_PROMPT_NAMES,
   EXPECTED_RESOURCE_NAMES,
   EXPECTED_TOOL_NAMES,
-  PHASE_1_OPERATIONAL_TOOL_NAMES,
-  PHASE_2_DISCOVERY_ONLY_TOOL_NAMES,
+  OPERATIONAL_TOOL_NAMES,
   createServiceFake,
 } from '@invompt/mcp-testkit'
 import { describe, expect, test, vi } from 'vitest'
 
 describe('public MCP discovery contract', () => {
-  test('registers 15 operational tools, one Phase 2 discovery-only tool, two resources, and one prompt', () => {
+  test('registers exactly 16 operational tools, two resources, and one prompt', () => {
     const tools: string[] = []
     const resources: string[] = []
     const prompts: string[] = []
@@ -27,9 +26,8 @@ describe('public MCP discovery contract', () => {
     expect(resources.sort()).toEqual([...EXPECTED_RESOURCE_NAMES].sort())
     expect(prompts).toEqual(EXPECTED_PROMPT_NAMES)
     expect(tools).toHaveLength(16)
-    expect(PHASE_1_OPERATIONAL_TOOL_NAMES).toHaveLength(15)
-    expect(PHASE_1_OPERATIONAL_TOOL_NAMES.every((name) => tools.includes(name))).toBe(true)
-    expect(PHASE_2_DISCOVERY_ONLY_TOOL_NAMES).toEqual(['approve_account_claim'])
-    expect(PHASE_2_DISCOVERY_ONLY_TOOL_NAMES.every((name) => tools.includes(name))).toBe(true)
+    expect(OPERATIONAL_TOOL_NAMES).toHaveLength(16)
+    expect(OPERATIONAL_TOOL_NAMES.every((name) => tools.includes(name))).toBe(true)
+    expect(tools).toContain('create_account_claim_link')
   })
 })

@@ -18,9 +18,8 @@ access to the invoicing workflow.
    Markup Language JSON format.
 
 3. When defaults matter and get_settings is exposed, read the connected adapter
-   workspace currency, invoice prefix, and payment terms. In public Phase 1 this is
-   the Guest mode; private account-mode authentication is handled by the adapter
-   layer. When the user asks to change defaults, call update_settings with only the fields
+   workspace currency, invoice prefix, and payment terms. Public deployment is
+   Guest-only. When the user asks to change defaults, call update_settings with only the fields
    they supplied and a stable 8–128 character idempotencyKey. Omitted settings
    stay unchanged; explicit null clears company name or currency.
 
@@ -84,14 +83,12 @@ access to the invoicing workflow.
   Use the locale supported by the live InvoML spec for dates, numbers, labels,
   currency formatting, and text direction.
 
-- Phase 1 exposes 15 operational invoice, settings, and client tools. The
-  approve_account_claim schema remains visible only as a discovery-only Phase 2
-  placeholder; it is not operational and must not be called in Phase 1.
+- The MCP surface exposes exactly 16 operational tools. create_account_claim_link
+  is a Guest-only mutation that creates a short-lived browser link for an explicit
+  account-claim request. It accepts no secrets or identifiers as input.
 
-- Public Phase 1 MCP capabilities are defined by the live operational tool schemas.
-  In this phase, this is Guest mode and registered-account setup remains in the
-  private adapter layer; the same machine guest credential is shared across
-  supported Phase 1 hosts.
+- Public MCP capabilities are defined by the live operational tool schemas. This
+  deployment uses Guest mode, and create_account_claim_link is Guest-only.
 
 ## Tips
 
@@ -110,10 +107,13 @@ access to the invoicing workflow.
 ## Adapter-Owned Setup
 
 Authentication material is supplied by the configured private adapter, not by
-this transport-neutral core or an invoice tool. Maintained public Phase 1 hosts
-use a server-issued Guest credential; agents must never discover, copy, print,
-or synthesize it. Registered-account and account-claim setup are not operational
-in the supported public Phase 1 deployment.
+this transport-neutral core or an invoice tool. Maintained public hosts use a
+server-issued Guest credential; agents must never discover, copy, print, or
+synthesize it. When the user explicitly asks to claim the active Guest workspace,
+call create_account_claim_link once. Present claimUrl exactly once, explain that it
+expires, and never log or repeat it. Do not include credentials, account IDs, claim
+IDs, or other internal identifiers. After the browser claim succeeds, the old Guest
+credential returns GUEST_ACCOUNT_CLAIMED; do not retry it.
 `
 
 export function registerGettingStartedResource(server: McpServer): void {

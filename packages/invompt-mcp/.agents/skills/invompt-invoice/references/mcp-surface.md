@@ -3,12 +3,8 @@
 Use the tool schemas exposed by the connected server as the final authority. The packaged
 `invompt-mcp` stdio server currently exposes these surfaces.
 
-Phase 1 has 15 operational tools. `approve_account_claim` is retained only as a discovery-only
-Phase 2 placeholder; it is not operational and must not be called.
-
-Public Phase 1 deployment is Guest-only. Registered-account setup and account-claim
-execution are not capabilities of this package; authentication for those workflows
-is owned by the private adapter layer.
+The surface has exactly 16 operational tools. `create_account_claim_link` is Guest-only and
+creates a short-lived browser claim link with no secret input.
 
 ## Resources
 
@@ -35,7 +31,7 @@ is owned by the private adapter layer.
 | `archive_invoice` | Guest | Idempotent destructive soft delete | Archive with expected-version protection. |
 | `unarchive_invoice` | Guest | Idempotent restore | Restore an archived invoice with expected-version protection. |
 | `renew_invoice_link` | Guest | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
-| `approve_account_claim` | Phase 2 only | Discovery-only, non-operational | Do not call in Phase 1; account-claim execution is deferred to Phase 2. |
+| `create_account_claim_link` | Guest only | Non-idempotent mutation | Create a short-lived browser claim URL with no input. Present it once, explain expiry, and never log it. |
 | `get_settings` | Guest | Read-only | Read company, currency, numbering, and payment defaults. |
 | `update_settings` | Guest | Idempotent update | Partially update invoice defaults without inventing omitted values. |
 | `list_clients` | Guest | Read-only | Search saved clients and receive deterministic exact/ambiguous/none resolution. |
@@ -71,3 +67,8 @@ code; HTTP/HTTPS website URLs; and trimmed idempotency keys of 8–128 character
 Do not invent tools that the server does not list. PDF rendering is not a published
 `invompt-mcp` tool. Return hosted invoice URLs; use `renew_invoice_link` when `get_invoice`
 reports no active link. The Web product owns preview and browser PDF download/print.
+
+Account claim is link-first: `create_account_claim_link` accepts no secrets or identifiers and
+returns only `claimUrl` and `expiresAt`. Never include credentials, account IDs, claim IDs, nonces,
+or OAuth data. Present `claimUrl` exactly once. After successful browser claim, the old
+Guest credential returns `GUEST_ACCOUNT_CLAIMED`; stop using it and reconcile onboarding state.
