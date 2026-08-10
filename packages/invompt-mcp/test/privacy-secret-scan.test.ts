@@ -1,6 +1,10 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, test } from 'vitest'
 
-import { FALSE_POSITIVE_ALLOWLIST, scanText } from '../../../scripts/privacy-secret-scan.mjs'
+import { FALSE_POSITIVE_ALLOWLIST, scanText, sourceFiles } from '../../../scripts/privacy-secret-scan.mjs'
 
 describe('privacy and secret scan contract', () => {
   test('detects materialized credentials and never suppresses another finding in an allowlisted file', () => {
@@ -24,5 +28,17 @@ describe('privacy and secret scan contract', () => {
         value: reviewedUpstreamEmail,
       }),
     )
+  })
+
+  test('excludes both .git directories and worktree .git metadata files from source scans', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'invompt-privacy-scan-'))
+    try {
+      writeFileSync(join(directory, '.git'), `gitdir: /Users/${['ari', 'el'].join('')}/private-worktree`)
+      mkdirSync(join(directory, 'source'))
+      writeFileSync(join(directory, 'source', 'safe.ts'), 'export const safe = true')
+      expect(sourceFiles(directory).map((path) => path.slice(directory.length + 1))).toEqual(['source/safe.ts'])
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
   })
 })

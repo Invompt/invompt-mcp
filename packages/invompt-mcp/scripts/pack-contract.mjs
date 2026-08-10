@@ -17,11 +17,27 @@ const REQUIRED_PACKED_FILES = [
   'dist/bridge.js',
   'dist/index.d.ts',
   'dist/index.js',
+  'dist/onboarding/guest-api.d.ts',
+  'dist/onboarding/guest-api.js',
+  'dist/onboarding/host-config.d.ts',
+  'dist/onboarding/host-config.js',
+  'dist/onboarding/secret-store.d.ts',
+  'dist/onboarding/secret-store.js',
+  'dist/onboarding/service.d.ts',
+  'dist/onboarding/service.js',
+  'dist/onboarding/state.d.ts',
+  'dist/onboarding/state.js',
+  'dist/onboarding/types.d.ts',
+  'dist/onboarding/types.js',
   'gemini-extension.json',
   'plugin.json',
   'qwen-extension.json',
   'runtime-support.json',
   'skills/invompt-invoice/SKILL.md',
+  'skills/invompt-onboarding/SKILL.md',
+  'skills/invompt-onboarding/agents/openai.yaml',
+  '.agents/skills/invompt-onboarding/SKILL.md',
+  '.agents/skills/invompt-onboarding/agents/openai.yaml',
   'THIRD_PARTY_NOTICES.md',
 ]
 
@@ -33,29 +49,17 @@ const VERSIONED_MANIFESTS = [
   'qwen-extension.json',
 ]
 
-const EXPECTED_PACKAGED_LAUNCHERS = [
-  {
-    asset: '.claude-plugin/plugin.json',
-    command: 'node',
-    target: 'dist/index.js',
-  },
-  {
-    asset: 'gemini-extension.json',
-    command: 'node',
-    target: 'dist/index.js',
-  },
-  {
-    asset: 'qwen-extension.json',
-    command: 'node',
-    target: 'dist/index.js',
-  },
-]
+const EXPECTED_PACKAGED_LAUNCHERS = []
 
 const EXPECTED_RUNTIMES = [
-  { id: 'claude-code', artifact: '.claude-plugin/plugin.json', status: 'package-contract-verified', freshHostStatus: 'external-verification-required' },
-  { id: 'codex', artifact: '.codex-plugin/plugin.json', status: 'package-contract-verified', freshHostStatus: 'external-verification-required' },
-  { id: 'gemini-cli', artifact: 'gemini-extension.json', status: 'package-contract-verified', freshHostStatus: 'external-verification-required' },
-  { id: 'qwen-code', artifact: 'qwen-extension.json', status: 'package-contract-verified', freshHostStatus: 'external-verification-required' },
+  { id: 'claude-code', artifact: '.claude-plugin/plugin.json', scope: 'local-beta-macos', modes: ['guest-stdio', 'oauth-http'], status: 'package-contract-verified', freshHostStatus: 'external-verification-required' },
+  { id: 'codex', artifact: '.codex-plugin/plugin.json', scope: 'local-beta-macos', modes: ['guest-stdio', 'oauth-http'], status: 'package-contract-verified', freshHostStatus: 'external-verification-required' },
+  { id: 'chatgpt-web', scope: 'remote', modes: ['oauth-http'], status: 'remote-oauth-only', localDeviceState: 'not-used', freshHostStatus: 'external-verification-required' },
+]
+
+const EXPECTED_TEMPLATES = [
+  { id: 'gemini-cli', artifact: 'gemini-extension.json', status: 'template-not-supported' },
+  { id: 'qwen-code', artifact: 'qwen-extension.json', status: 'template-not-supported' },
 ]
 
 const EXPECTED_SURFACES = [
@@ -138,14 +142,13 @@ export function verifyPackContract({
       isolatedInstallBehavior?.initializeAndDiscoveryPassed === true &&
       isolatedInstallBehavior?.exactOriginPolicyPassed === true &&
       isolatedInstallBehavior?.siblingCoreAbsent === true &&
-      isolatedInstallBehavior?.retainedLaunchersResolved === true &&
-      isolatedInstallBehavior?.retainedLaunchersExecuted === true &&
+      isolatedInstallBehavior?.noStaticMcpTransport === true &&
       isolatedInstallBehavior?.cleanTypeScriptConsumerPassed === true,
-    'the tarball installs offline, has no runtime dependency, launches every retained host config, and typechecks a clean consumer',
+    'the tarball installs offline, has no runtime dependency or static MCP transport, and typechecks a clean consumer',
   )
   assert(
     JSON.stringify(retainedPackagedLaunchers) === JSON.stringify(EXPECTED_PACKAGED_LAUNCHERS),
-    'the packed launcher inventory exactly contains Claude Code, Gemini CLI, and Qwen Code',
+    'the packed launcher inventory contains no static MCP transport',
   )
 
   const pack = packEntries[0]
@@ -169,23 +172,28 @@ export function verifyPackContract({
   }
 
   const runtimeSupport = JSON.parse(readText('runtime-support.json'))
-  assert(runtimeSupport.canonicalHosts?.localMcp === 'http://localhost:3101/mcp', 'local MCP endpoint is canonical')
+  assert(runtimeSupport.schemaVersion === 2, 'runtime support schema is current')
   assert(
-    runtimeSupport.transportPolicy?.default === 'exact-loopback-mcp' &&
-      runtimeSupport.transportPolicy?.optionalExplicitTrustedHttpsOrigins === true,
-    'runtime support documents the transport-neutral exact-origin policy',
+    runtimeSupport.endpoints?.hostedMcp === 'https://mcp.invompt.com/mcp' &&
+      runtimeSupport.endpoints?.webCredentialLifecycle === 'https://invompt.com' &&
+      runtimeSupport.endpoints?.loopbackDevelopmentMcp === 'http://localhost:3101/mcp',
+    'runtime support records hosted, Web lifecycle, and loopback-development endpoints',
   )
-  assert(Object.keys(runtimeSupport.canonicalHosts ?? {}).length === 1, 'runtime support advertises no endpoint beyond exact loopback MCP')
-  assert(runtimeSupport.releaseChannel?.status === 'public-development-pre-1.0', 'runtime support states pre-1.0 public development status')
+  assert(runtimeSupport.releaseChannel?.status === 'local-beta-pre-1.0', 'runtime support states local beta pre-1.0 status')
   assert(runtimeSupport.releaseChannel?.next === 'development-only', 'runtime support limits next to development use')
   assert(runtimeSupport.releaseChannel?.externalRegistryVerificationRequired === true, 'runtime support requires external registry verification')
-  assert(runtimeSupport.verificationContract?.scope === 'source-repository', 'verification scope is source-repository')
-  assert(runtimeSupport.verificationContract?.sourceCommand === 'npm run verify:pack', 'source verification command is exact')
-  assert(runtimeSupport.verificationContract?.successStatus === 'passed', 'runtime verification success status is exact')
+  assert(runtimeSupport.releaseChannel?.productionClaim === false, 'runtime support makes no production claim')
+  assert(
+    runtimeSupport.localState?.authState === '~/.invompt/auth-state.json' &&
+      runtimeSupport.localState?.fileFallback === '~/.invompt/guest-credential only with --allow-file-fallback' &&
+      runtimeSupport.localState?.guestToOauth === 'Guest remains dormant when OAuth is selected',
+    'runtime support records local state and dormant Guest switching semantics',
+  )
   assert(
     JSON.stringify(runtimeSupport.runtimes) === JSON.stringify(EXPECTED_RUNTIMES),
     'runtime matrix exactly matches package-contract-only host claims',
   )
+  assert(JSON.stringify(runtimeSupport.templates) === JSON.stringify(EXPECTED_TEMPLATES), 'runtime support labels Gemini and Qwen as unsupported templates')
   assert(
     JSON.stringify(runtimeSupport.surfaces) === JSON.stringify(EXPECTED_SURFACES),
     'surface matrix exactly matches package-owned verified artifacts',
@@ -214,7 +222,7 @@ export function verifyPackContract({
     'public contracts subpath exports the exact issuer instruction',
   )
   assert(
-    exportedGuestInstructions.includes('create_account_claim_link') &&
+      exportedGuestInstructions.includes('create_account_claim_link') &&
       exportedGuestInstructions.includes('present claimUrl exactly once') &&
       exportedGuestInstructions.includes('GUEST_ACCOUNT_CLAIMED'),
     'public contracts subpath documents the operational link-first Guest claim flow',
@@ -241,12 +249,18 @@ export function verifyPackContract({
 
   const readme = readText('README.md')
   assert(readme.includes('public-development, pre-1.0'), 'packaged README states the public-development pre-1.0 status')
-  assert(readme.includes('http://localhost:3101/mcp'), 'packaged README limits the bridge to the exact loopback transport')
-  assert(readme.includes('does not execute invoice tools') && readme.includes('no runtime dependencies'), 'packaged README limits bridge responsibility and dependencies')
-  assert(readme.includes('no supported external registry installation flow'), 'packaged README advertises no external Phase 1 registry setup')
-  assert(readme.includes('Verify live registry state'), 'packaged README treats registry state as externally verified')
-  assert(readme.includes('external registry availability or host compatibility'), 'packaged README makes no unverified installation claim')
-  assert(readme.includes('development builds') && readme.includes('not a production channel'), 'packaged README limits next to development use')
+  assert(readme.includes('https://mcp.invompt.com/mcp'), 'packaged README records the hosted MCP endpoint')
+  assert(readme.includes('http://localhost:3101/mcp'), 'packaged README records the loopback development endpoint')
+  assert(
+    readme.includes('does not contain invoice business logic') && readme.includes('no runtime dependencies'),
+    'packaged README limits bridge responsibility and dependencies',
+  )
+  assert(readme.includes('npx --yes invompt-mcp@0.11.0 setup --host codex'), 'packaged README pins Codex setup to 0.11.0')
+  assert(readme.includes('npx --yes invompt-mcp@0.11.0 setup --host claude-code'), 'packaged README pins Claude setup to 0.11.0')
+  assert(readme.includes('--allow-file-fallback') && readme.includes('auth-state.json'), 'packaged README documents explicit fallback and state paths')
+  assert(readme.includes('no postinstall prompt'), 'packaged README states that setup has no postinstall prompt')
+  assert(readme.includes('ChatGPT web is separate and remote OAuth-only'), 'packaged README distinguishes ChatGPT remote OAuth')
+  assert(readme.includes('no release, production, registry-availability'), 'packaged README makes no unverified release claim')
   assert(readText('THIRD_PARTY_NOTICES.md').includes('@modelcontextprotocol/sdk@1.30.0'), 'packed package includes deterministic bundled third-party notices')
 
   const gettingStartedSource = readText('../mcp-core/src/resources/getting-started.ts')
@@ -259,39 +273,55 @@ export function verifyPackContract({
       gettingStartedSource.includes('create_account_claim_link') &&
       gettingStartedSource.includes('Present claimUrl exactly once') &&
       gettingStartedSource.includes('GUEST_ACCOUNT_CLAIMED') &&
-      gettingStartedSource.includes('server-issued Guest credential'),
+      gettingStartedSource.includes('server-issued pseudonymous local credential') &&
+      gettingStartedSource.includes('separate registered OAuth') &&
+      !gettingStartedSource.includes('private adapter layer'),
     'getting-started resource documents the input-free link-first Guest claim flow',
   )
   const createAccountClaimLinkSource = readText('../mcp-core/src/tools/create-account-claim-link.ts')
   assert(
     createAccountClaimLinkSource.includes("'create_account_claim_link'") &&
       createAccountClaimLinkSource.includes('inputSchema: {}') &&
-      createAccountClaimLinkSource.includes('client.isGuest()') &&
-      createAccountClaimLinkSource.includes('ACCOUNT_CLAIM_OAUTH_FORBIDDEN') &&
       createAccountClaimLinkSource.includes('client.createAccountClaimLink()') &&
       createAccountClaimLinkSource.includes('readOnlyHint: false') &&
       createAccountClaimLinkSource.includes('idempotentHint: false') &&
       createAccountClaimLinkSource.includes('openWorldHint: false') &&
       !createAccountClaimLinkSource.includes('replayed'),
-    'create_account_claim_link is Guest-only, input-free, and annotated as a closed non-idempotent mutation',
+    'create_account_claim_link is operational, input-free, and annotated as a closed non-idempotent mutation',
   )
   const skillSource = readText('skills/invompt-invoice/SKILL.md')
   const skillMirror = readText('.agents/skills/invompt-invoice/SKILL.md')
+  const onboardingSkill = readText('skills/invompt-onboarding/SKILL.md')
+  const onboardingMirror = readText('.agents/skills/invompt-onboarding/SKILL.md')
+  const onboardingMetadata = readText('skills/invompt-onboarding/agents/openai.yaml')
+  const onboardingMetadataMirror = readText('.agents/skills/invompt-onboarding/agents/openai.yaml')
   const surfaceSource = readText('skills/invompt-invoice/references/mcp-surface.md')
   const surfaceMirror = readText('.agents/skills/invompt-invoice/references/mcp-surface.md')
   assert(skillSource === skillMirror, 'packaged skill and generated agent mirror are byte-identical')
   assert(surfaceSource === surfaceMirror, 'packaged MCP reference and generated agent mirror are byte-identical')
+  assert(onboardingSkill === onboardingMirror, 'packaged onboarding skill and generated agent mirror are byte-identical')
+  assert(onboardingMetadata === onboardingMetadataMirror, 'packaged onboarding skill metadata and mirror are byte-identical')
   assert(
-    skillSource.includes('Public deployment is Guest-only') &&
-      skillSource.includes('create_account_claim_link') &&
-      skillSource.includes('GUEST_ACCOUNT_CLAIMED'),
-    'packaged skill documents the operational link-first Guest account claim',
+    skillSource.includes('Before any MCP call, load `invompt-onboarding`') &&
+      skillSource.includes('Do not call `invompt` until onboarding confirms an active binding'),
+    'invoice skill routes through onboarding before MCP calls',
   )
   assert(
-    surfaceSource.includes('exactly 16 operational tools') &&
-      surfaceSource.includes('create_account_claim_link') &&
-      surfaceSource.includes('GUEST_ACCOUNT_CLAIMED'),
-    'packaged MCP reference documents the operational link-first Guest account claim',
+    onboardingSkill.includes('Ask exactly this one choice question') &&
+      onboardingSkill.includes('wait for an explicit `Guest` or `OAuth` choice') &&
+      onboardingSkill.includes('leaves the Guest credential dormant') &&
+      onboardingSkill.includes('ChatGPT web, use remote OAuth only') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.0 setup --host codex') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.0 setup --host claude-code') &&
+      onboardingSkill.includes('deliberate reset/recovery') &&
+      onboardingSkill.includes('before another setup attempt') &&
+      onboardingSkill.includes('binding.mode ===\nselectedMode') &&
+      onboardingSkill.includes('binding.epoch === state.epoch') &&
+      onboardingSkill.includes('Do not treat active status alone as usable') &&
+      onboardingSkill.includes('call `create_account_claim_link` once') &&
+      onboardingSkill.includes('`claimUrl` exactly once') &&
+      onboardingSkill.includes('`GUEST_ACCOUNT_CLAIMED`'),
+    'onboarding skill requires explicit setup plus one-time, expiring Guest claim-link handling',
   )
   assert(OPERATIONAL_TOOL_SOURCES.length === 16, 'pack-contract inspects the exact 16 operational tool sources')
   for (const [path, toolName] of OPERATIONAL_TOOL_SOURCES) {
@@ -300,17 +330,10 @@ export function verifyPackContract({
       contents.includes(`'${toolName}'`) || contents.includes(`\"${toolName}\"`),
       `${path} exposes operational tool registration for ${toolName}`,
     )
-    if (toolName === 'create_account_claim_link') {
-      assert(
-        contents.includes('client.isGuest()') && contents.includes('ACCOUNT_CLAIM_OAUTH_FORBIDDEN'),
-        `${path} is explicitly Guest-only and fails closed for OAuth`,
-      )
-    } else {
-      assert(
-        !/connected Guest workspace|guest or account|account or guest|guest-company/i.test(contents),
-        `${path} remains authentication-neutral for adapter composition`,
-      )
-    }
+    assert(
+      !/connected Guest workspace|guest or account|account or guest|guest-company/i.test(contents),
+      `${path} remains authentication-neutral for adapter composition`,
+    )
   }
   for (const [path, contents] of [
     ['skills/invompt-invoice/SKILL.md', skillSource],
@@ -324,19 +347,30 @@ export function verifyPackContract({
     )
   }
 
-  const bannedHostAssetTerms = [
-    'npx',
-    '--prefer-offline',
-    `invompt-mcp@${packageJson.version}`,
-    'https://mcp.invompt.com',
-    'test:mcp:hosts:guest',
-    'deferred-p3',
-    '"boundary": "product"',
-  ]
-  const packedTextAssets = [...packedPaths].filter((path) => /\.(?:c?js|d\.ts|json|md|mdc|toml|yaml)$/.test(path))
-  for (const path of packedTextAssets) {
+  const hostManifestPaths = ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'gemini-extension.json', 'qwen-extension.json']
+  for (const path of hostManifestPaths) {
+    const manifest = JSON.parse(readText(path))
+    assert(!Object.hasOwn(manifest, 'mcpServers'), `${path} declares no static MCP transport`)
+    const serialized = JSON.stringify(manifest)
+    for (const term of ['INVOMPT_GUEST_CREDENTIAL', 'X-Invompt-Guest-Credential', 'guest credential']) {
+      assert(!serialized.toLowerCase().includes(term.toLowerCase()), `${path} contains no Guest credential material or setting`)
+    }
+  }
+  const claudeManifest = JSON.parse(readText('.claude-plugin/plugin.json'))
+  const codexManifest = JSON.parse(readText('.codex-plugin/plugin.json'))
+  assert(claudeManifest.skills === './skills/', 'Claude manifest discovers skills without a static transport')
+  assert(codexManifest.skills === './skills/', 'Codex manifest discovers skills without a static transport')
+  for (const path of ['gemini-extension.json', 'qwen-extension.json']) {
+    const manifest = JSON.parse(readText(path))
+    assert(!Object.hasOwn(manifest, 'status'), `${path} contains no nonstandard status field`)
+    assert(manifest.description.includes('Template only') && manifest.description.includes('not a supported'), `${path} is labeled as an unsupported template`)
+    assert(!Object.hasOwn(manifest, 'settings'), `${path} has no stale Guest launch settings`)
+  }
+  for (const path of [...packedPaths].filter((value) => value.startsWith('dist/') && /\.(?:c?js|d\.ts)$/.test(value))) {
     const contents = readText(path)
-    for (const term of bannedHostAssetTerms) assert(!contents.includes(term), `${path} excludes ${term}`)
+    for (const pattern of [/ioreg/i, /system_profiler/i, /machine-id/i, /mac address collection/i, /serial number collection/i, /hostname identity/i, /fingerprint(?:ing)?\s*(?:api|collection)?/i, /hardware\s*api/i]) {
+      assert(!pattern.test(contents), `${path} excludes device fingerprint and hardware identity collection`)
+    }
   }
 
   const credentialLiteralPattern = /inv_gd_v1\.[a-z0-9]{1,16}\.[A-Za-z0-9_-]{43}\.[A-Za-z0-9_-]{43}/

@@ -12,4 +12,6 @@ Include the affected revision or package integrity, a minimal reproduction, impa
 
 ## Scope
 
-The bridge accepts only its documented loopback MCP transport by default. Reports involving credential handling, packed artifacts, host manifests, release automation, and dependency provenance are in scope.
+This repository is a separate local-beta CLI and stdio-bridge distribution. It is not the Workspace Hub's global consumer plugin: that consumer remains a single hosted HTTPS OAuth provider and must not gain Guest credentials, static headers, or local-device state through this package.
+
+Guest mode forwards only to `https://mcp.invompt.com/mcp` after an explicit local choice; the loopback endpoint is development-only. OAuth mode uses the host-native OAuth flow at the same hosted endpoint. Reports involving choice/mode isolation, credential storage or revocation, host configuration, redirect/origin checks, packed artifacts, release automation, and dependency provenance are in scope.

@@ -1,24 +1,7 @@
 {
   "name": "invompt",
-  "version": "0.10.3",
-  "description": "Create and manage professional invoices, quotes, estimates, and pro formas from natural-language requests in any language.",
-  "mcpServers": {
-    "invompt": {
-      "command": "node",
-      "args": [
-        "${extensionPath}${/}dist${/}index.js"
-      ],
-      "cwd": "${extensionPath}"
-    }
-  },
+  "version": "0.11.0",
+  "description": "Template only; Qwen Code is not a supported Invompt local-beta runtime.",
   "skills": "skills",
-  "agents": "agents",
-  "settings": [
-    {
-      "name": "Invompt guest credential",
-      "description": "Optional server-issued guest credential shared through INVOMPT_GUEST_CREDENTIAL.",
-      "envVar": "INVOMPT_GUEST_CREDENTIAL",
-      "sensitive": true
-    }
-  ]
+  "agents": "agents"
 }

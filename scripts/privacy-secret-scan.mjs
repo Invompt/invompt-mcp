@@ -63,10 +63,11 @@ const forbiddenPatterns = Object.freeze([
   { label: 'private infrastructure reference', pattern: new RegExp(`\\b${joined('supa', 'base')}\\b`, 'gi') },
 ])
 
-function sourceFiles(directory = workspaceRoot) {
+export function sourceFiles(directory = workspaceRoot) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = resolve(directory, entry.name)
-    if (entry.isDirectory()) return excludedDirectories.has(entry.name) ? [] : sourceFiles(path)
+    if (excludedDirectories.has(entry.name)) return []
+    if (entry.isDirectory()) return sourceFiles(path)
     return entry.isFile() ? [path] : []
   })
 }

@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "outDir": "dist", "rootDir": "src" },
-  "include": ["src/index.ts", "src/bridge.ts", "src/guest-credential.ts", "src/contracts.ts", "src/error.ts"]
+  "include": ["src/**/*.ts"]
 }

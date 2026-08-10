@@ -1,83 +1,68 @@
 # Invompt MCP
 
-[![npm next](https://img.shields.io/npm/v/invompt-mcp/next?style=flat-square&label=npm%20next)](https://www.npmjs.com/package/invompt-mcp)
-[![CI](https://img.shields.io/github/actions/workflow/status/Invompt/invompt-mcp/ci.yml?style=flat-square&label=tests)](https://github.com/Invompt/invompt-mcp/actions)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](package.json)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+Invompt MCP is a pre-1.0, local-beta package for onboarding Claude Code and Codex to Invompt invoice tools. It provides portable skills, a setup CLI, and a Guest stdio bridge; Invompt retains invoice rules, persistence, rendering, and hosted document links.
 
-**Bring Invompt invoice tools into MCP-compatible AI clients.**
+> This source prepares `invompt-mcp@0.11.0` for the `next` channel only. It makes no release, production, registry-availability, or fresh-host compatibility claim. Verify external state independently before relying on any registry artifact.
 
-Invompt MCP is a pre-1.0 TypeScript workspace for the public `invompt-mcp` stdio bridge and its
-transport-neutral contract. The bridge connects an MCP client to a configured Invompt MCP service
-without moving invoice business logic into the client package.
+## Supported local-beta hosts
 
-> **Prerelease:** this source declares `invompt-mcp@0.10.3` for the `next` channel. Verify the
-> live registry before relying on that version. The artifact is for distribution and audit; it is
-> not a public install/run promise.
+Local beta is scoped to macOS Claude Code and Codex. Their package manifests expose skills only; they do not install a static MCP transport because the user must choose the connection mode first.
 
-## Installation
+| Mode | Transport | Use when |
+|---|---|---|
+| Guest | Local stdio bridge to `https://mcp.invompt.com/mcp` | You explicitly choose a server-issued pseudonymous local credential. |
+| OAuth | Native HTTPS MCP at `https://mcp.invompt.com/mcp` | You explicitly choose browser sign-in. |
 
-There is no supported external registry installation flow in Phase 1. Maintained hosts use the
-private configurator and direct transport at `http://localhost:3101/mcp`. The npm artifact on
-`next` is a distribution and audit boundary, not a replacement for that setup.
+The local loopback development endpoint is `http://localhost:3101/mcp`; it is for development, not a public host-default configuration. Gemini CLI and Qwen Code files are templates only and are not supported local-beta runtimes.
 
-Node.js 18 or newer is required.
+ChatGPT web is separate: it is remote OAuth-only at `https://mcp.invompt.com/mcp`. It must never run local status/setup, use a Guest bridge, or inspect local device state.
 
-## Maintained runtime shape
+This repository's CLI is a separate local-beta distribution. It does not replace, install, or redefine the Workspace Hub global consumer plugin, which remains one hosted HTTPS OAuth-only `invompt` provider. Do not run local-beta setup to change that normal consumer configuration.
 
-The private host configurator owns executable discovery and credential materialization. The bridge
-connects to `http://localhost:3101/mcp` by default; users must not synthesize a launch manifest or
-copy a Guest credential from this repository.
+## Setup
 
-```text
-MCP client  →  invompt-mcp  →  configured Invompt MCP service  →  invoice operations
+Before an Invompt MCP call, the onboarding skill checks redacted status. If the mode is undecided, it asks exactly whether you want **Guest** or **OAuth** in the current conversation language and waits for your explicit choice.
+
+For Codex, run one chosen command:
+
+```sh
+npx --yes invompt-mcp@0.11.0 setup --host codex --mode guest
+npx --yes invompt-mcp@0.11.0 setup --host codex --mode oauth
 ```
 
-## Design
+For Claude Code, use the same pinned package CLI rather than assuming an installed-cache path:
 
-The public bridge has a deliberately narrow responsibility:
+```sh
+npx --yes invompt-mcp@0.11.0 setup --host claude-code --mode guest
+npx --yes invompt-mcp@0.11.0 setup --host claude-code --mode oauth
+```
 
-- Forward MCP JSON-RPC between stdio and Streamable HTTP.
-- Allow the fixed loopback transport or an explicitly trusted exact HTTPS origin.
-- Reject wildcards, paths, credentials, queries, fragments, and redirects.
-- Bundle the runtime into a self-contained package with no runtime dependencies.
+Use `status --json` through the same current-host command to inspect redacted state. There is no postinstall prompt and no credential in a manifest or host configuration.
 
-It does not execute invoice tools, make REST calls, access a database, or expose a network
-listener. Invompt product code owns invoice rules, InvoML validation and calculation, rendering,
-persistence, and hosted document links.
+Guest is Keychain-first on macOS (`com.invompt.invompt-mcp` / `guest-credential`). Only when you explicitly permit the fallback may setup add `--allow-file-fallback`; the fallback is restricted-permission plaintext at `~/.invompt/guest-credential` (mode `0600`). Non-secret local state is `~/.invompt/auth-state.json` (mode `0600` in a `0700` directory).
 
-## Workspace
+Switching Guest to OAuth leaves the Guest secret dormant. It is never auto-converted, claimed, or merged into an account. Use `logout --host codex` or `logout --host claude-code` for a deliberate host logout. `reset --yes` removes local state and attempts Guest revocation; if revocation cannot reach the service, copied credentials may remain valid and the CLI reports that warning.
 
-| Package | Purpose | Published to npm |
-|---|---|---|
-| `invompt-mcp` | Self-contained stdio bridge and portable host assets | Yes, on `next` |
-| `@invompt/mcp-core` | Transport-neutral MCP contract source | No |
-| `@invompt/mcp-testkit` | Contract fixtures and service fakes | No |
+## Migration and rollback
 
-The package README shown on npm lives at
-[`packages/invompt-mcp/README.md`](packages/invompt-mcp/README.md).
+`0.11.0` introduces explicit local-beta Guest/OAuth onboarding; it does not migrate an existing global OAuth-only consumer. Select one local-beta mode deliberately. `--allow-file-fallback` is valid only with `setup --mode guest`, and unknown or duplicate flags are rejected. To roll back local-beta state, first run `logout --host …`; use `reset --yes` only when you also intend to remove local authentication state and attempt Guest revocation. Restore the Workspace Hub consumer through its own OAuth-only installer, not this CLI.
 
-## Local development
+## Failures and privacy
 
-Use Node.js 22.22.0 and npm 11.11.0 for the canonical release checks:
+- Offline/network failures and `5xx` responses are temporary failures; do not loop or silently retry credential issuance.
+- `401` means a Guest credential is invalid or revoked; use deliberate reset/recovery before another setup attempt, especially when the recorded secret backend is unavailable.
+- `429` respects `Retry-After`; do not retry before it.
+- A host CLI error leaves setup needing reconciliation; do not claim the host is configured.
+
+Invompt MCP derives no hardware or device fingerprint and collects no serial data or MAC addresses. The server-issued Guest credential is the sole pseudonymous local identity; it is stored in Keychain by default and is never used to derive device identity. It has no runtime dependencies after bundling, opens no listener, and does not execute invoice business logic. It forwards JSON-RPC only through the explicitly selected transport and rejects HTTP redirects.
+
+## Development verification
+
+Use Node.js 22.22.0 and npm 11.11.0 for the canonical package gates:
 
 ```sh
 npm ci
 npm run check
 ```
 
-The check builds every workspace, typechecks, lints, tests, scans tracked and packed assets for
-secrets, verifies third-party notices, and checks the packed-file allowlist plus an offline
-tarball-only consumer.
-
-Local source checks do not prove external registry availability or host compatibility. The `next`
-channel contains development builds and is not a production channel or support promise.
-
-## Security and contribution
-
-- [Security policy](SECURITY.md)
-- [Contributing guide](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [MIT License](LICENSE)
-
-Publishing is an external authorization and is never performed by local validation.
+The checks build, typecheck, lint, test, scan source and packed artifacts for secrets/privacy regressions, verify the exact package allowlist, and test an isolated tarball-only consumer. Local checks do not prove an external release or fresh-host installation.

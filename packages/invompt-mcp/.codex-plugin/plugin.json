@@ -1,7 +1,7 @@
 {
   "name": "invompt-mcp",
-  "version": "0.10.3",
-  "description": "Create and manage saved clients, invoices, quotes, estimates, and pro formas from natural-language requests in any language.",
+  "version": "0.11.0",
+  "description": "Local-beta Invompt onboarding and invoice workflows. Select Guest or OAuth in the current conversation before configuring MCP.",
   "author": {
     "name": "Invompt",
     "url": "https://invompt.com"

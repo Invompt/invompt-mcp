@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { relative, resolve, sep } from 'node:path'
+import { resolve } from 'node:path'
 
 import { verifyPackContract } from './pack-contract.mjs'
 import {
@@ -56,22 +56,6 @@ function runPack() {
   } catch {
     throw new Error('npm pack did not produce valid JSON')
   }
-}
-
-function resolveLauncherValue(value, asset, installedPackageRoot) {
-  if (typeof value !== 'string') throw new Error(`${asset} launcher value must be a string`)
-  if (asset === '.claude-plugin/plugin.json') {
-    return value.replaceAll('${CLAUDE_PLUGIN_ROOT}', installedPackageRoot)
-  }
-  if (asset === 'gemini-extension.json' || asset === 'qwen-extension.json') {
-    return value.replaceAll('${extensionPath}', installedPackageRoot).replaceAll('${/}', sep)
-  }
-  throw new Error(`Unsupported packaged launcher asset: ${asset}`)
-}
-
-function pathIsInside(path, root) {
-  const pathFromRoot = relative(root, path)
-  return pathFromRoot === '' || (!pathFromRoot.startsWith(`..${sep}`) && pathFromRoot !== '..')
 }
 
 const firstPack = runPack()
@@ -171,47 +155,20 @@ try {
   const packedJsonAssets = firstPack.entries[0].files
     .map(({ path }) => path)
     .filter((path) => path.endsWith('.json') && path !== 'package.json')
-  const launcherAssets = []
   for (const asset of packedJsonAssets) {
-    const value = JSON.parse(readFileSync(resolve(installedPackageRoot, asset), 'utf8'))
-    if (Object.hasOwn(value, 'mcpServers')) launcherAssets.push({ asset, manifest: value })
+    const manifest = JSON.parse(readFileSync(resolve(installedPackageRoot, asset), 'utf8'))
+    if (Object.hasOwn(manifest, 'mcpServers')) throw new Error(`${asset} contains a static MCP transport`)
   }
-  launcherAssets.sort(({ asset: left }, { asset: right }) => left.localeCompare(right))
-
   retainedPackagedLaunchers = []
-  for (const { asset, manifest } of launcherAssets) {
-    const entries = Object.entries(manifest.mcpServers ?? {})
-    if (entries.length !== 1 || entries[0][0] !== 'invompt') {
-      throw new Error(`${asset} must define exactly the Invompt MCP launcher`)
-    }
-    const launcher = entries[0][1]
-    if (launcher.command !== 'node' || !Array.isArray(launcher.args) || launcher.args.length !== 1) {
-      throw new Error(`${asset} must launch one package-relative Node entrypoint`)
-    }
-    const cwd = resolveLauncherValue(launcher.cwd, asset, installedPackageRoot)
-    const target = resolveLauncherValue(launcher.args[0], asset, installedPackageRoot)
-    if (resolve(cwd) !== installedPackageRoot || resolve(target) !== resolve(installedPackageRoot, 'dist/index.js')) {
-      throw new Error(`${asset} does not resolve to the installed package dist bridge`)
-    }
-    if (!pathIsInside(resolve(target), installedPackageRoot) || !pathIsInside(resolve(cwd), installedPackageRoot)) {
-      throw new Error(`${asset} resolves outside the installed package`)
-    }
-    const launcherEnvironment = { ...process.env, HOME: isolatedConsumerRoot, USERPROFILE: isolatedConsumerRoot }
-    delete launcherEnvironment.INVOMPT_GUEST_CREDENTIAL
-    delete launcherEnvironment.INVOMPT_PRIVATE_MCP_URL
-    delete launcherEnvironment.INVOMPT_TRUSTED_MCP_ORIGINS
-    const launched = spawnSync(launcher.command, [target], {
-      cwd,
-      encoding: 'utf8',
-      env: launcherEnvironment,
-    })
-    if (launched.status !== 1 || !launched.stderr.includes('A Guest credential is required')) {
-      throw new Error(`${asset} did not execute its installed dist bridge: ${launched.stderr.trim()}`)
-    }
-    if (/ERR_MODULE_NOT_FOUND|Cannot find (?:module|package)/.test(launched.stderr)) {
-      throw new Error(`${asset} launcher fell back to an unavailable dependency`)
-    }
-    retainedPackagedLaunchers.push({ asset, command: launcher.command, target: 'dist/index.js' })
+  const statusProbe = spawnSync(process.execPath, [resolve(installedPackageRoot, 'dist/index.js'), 'status', '--json'], {
+    cwd: installedPackageRoot,
+    encoding: 'utf8',
+    env: { ...process.env, HOME: isolatedConsumerRoot, USERPROFILE: isolatedConsumerRoot },
+  })
+  if (statusProbe.status !== 0) throw new Error(`installed onboarding status probe failed: ${statusProbe.stderr.trim()}`)
+  const status = JSON.parse(statusProbe.stdout)
+  if (status.selectedMode !== null || status.guest?.status !== 'none') {
+    throw new Error('installed onboarding status probe did not return redacted initial state')
   }
 
   const isolatedProbe = spawnSync(
@@ -378,8 +335,7 @@ void options
     initializeAndDiscoveryPassed: true,
     exactOriginPolicyPassed: true,
     siblingCoreAbsent: !dependencyTree.stdout.includes('@invompt/mcp-core'),
-    retainedLaunchersResolved: retainedPackagedLaunchers.length === launcherAssets.length,
-    retainedLaunchersExecuted: retainedPackagedLaunchers.length === launcherAssets.length,
+    noStaticMcpTransport: retainedPackagedLaunchers.length === 0,
     cleanTypeScriptConsumerPassed: true,
   }
 } finally {

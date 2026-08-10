@@ -1,102 +1,68 @@
 # Invompt MCP
 
-[![npm next](https://img.shields.io/npm/v/invompt-mcp/next?style=flat-square&label=npm%20next)](https://www.npmjs.com/package/invompt-mcp)
-[![CI](https://img.shields.io/github/actions/workflow/status/Invompt/invompt-mcp/ci.yml?style=flat-square&label=tests)](https://github.com/Invompt/invompt-mcp/actions)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](package.json)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+`invompt-mcp` is a self-contained local-beta onboarding CLI and Guest stdio bridge for Invompt MCP. It ships portable skills for Claude Code and Codex; it does not contain invoice business logic, a database client, REST fallback, or an HTTP listener.
 
-**Bring Invompt invoice tools into MCP-compatible AI clients.**
+> **Prerelease:** this public-development, pre-1.0 source declares `0.11.0` for `next`. It makes no release, production, registry-availability, or fresh-host compatibility claim. Verify live registry state independently before relying on a package version.
 
-`invompt-mcp` is a self-contained stdio bridge between an MCP client and a configured Invompt MCP
-service. It forwards MCP JSON-RPC messages without moving invoice business logic into the client.
+## Local-beta scope
 
-> **Prerelease:** this public-development, pre-1.0 source declares version `0.10.3` for the
-> `next` channel. Verify live registry state before relying on it. Operational Phase 1 is
-> supported only through maintained private adapter configuration and direct transport.
+Supported local-beta hosts are macOS Claude Code and Codex. Their plugin manifests discover skills only; they deliberately contain no static `mcpServers` configuration because Guest and OAuth need different transports. Gemini CLI and Qwen Code manifest files are template-not-supported assets, not supported runtimes.
 
-## Installation
+| Mode | Transport | Endpoint |
+|---|---|---|
+| Guest | stdio bridge | `https://mcp.invompt.com/mcp` |
+| OAuth | native HTTPS MCP | `https://mcp.invompt.com/mcp` |
 
-There is no supported external registry installation flow in Phase 1. Maintained hosts use the
-private adapter configuration and direct transport. The npm tarball on `next` is an audit and
-distribution artifact, not a public setup contract.
+`http://localhost:3101/mcp` is the loopback development endpoint. It is not a public host-default configuration. ChatGPT web is separate and remote OAuth-only: it connects to the hosted endpoint and must never run local status/setup, use Guest mode, or inspect local device state.
 
-Node.js 18 or newer is required.
+This is a separate CLI/local-beta distribution. The Workspace Hub global consumer remains a single hosted HTTPS OAuth-only `invompt` provider; this package must not be used to add Guest credentials, static headers, or local-device state to that consumer configuration.
 
-## Maintained runtime shape
+## Explicit setup
 
-The private host configurator owns executable discovery and credential materialization. The bridge
-connects to `http://localhost:3101/mcp` by default. Do not construct a launch manifest or copy a
-Guest credential from the public artifact.
+On first Invompt use, `invompt-onboarding` checks redacted status. When mode is undecided it asks, in the current conversation language, exactly whether the user wants **Guest** or **OAuth**, gives a brief explanation, and waits for an explicit choice.
 
-```text
-MCP client  →  invompt-mcp  →  configured Invompt MCP service  →  invoice operations
+For Codex, use the exact pinned CLI command after that choice:
+
+```sh
+npx --yes invompt-mcp@0.11.0 setup --host codex --mode guest
+npx --yes invompt-mcp@0.11.0 setup --host codex --mode oauth
 ```
 
-## What the bridge does
+For Claude Code, use the same pinned package CLI rather than assuming an installed-cache path:
 
-- Connects stdio-based MCP clients to Invompt's Streamable HTTP transport.
-- Forwards each JSON-RPC message once in either direction.
-- Exposes `startBridge()` for programmatic integrations.
-- Ships host manifests, agent skills, and shared MCP instructions in one package.
-- Runs with no runtime dependencies after bundling.
-
-## What it does not do
-
-The bridge does not execute invoice tools, make REST calls, access a database, or open a network
-listener. Invompt owns invoice rules, InvoML validation and calculation, rendering, persistence,
-and hosted document links.
-
-The package is not the Invompt server and does not provide a public HTTP endpoint.
-
-## Auditable library surface
-
-```ts
-import { startBridge } from 'invompt-mcp'
-
-// Maintainer-owned host configuration calls this after establishing private configuration.
-await startBridge()
+```sh
+npx --yes invompt-mcp@0.11.0 setup --host claude-code --mode guest
+npx --yes invompt-mcp@0.11.0 setup --host claude-code --mode oauth
 ```
 
-The root export also includes transport policy and Guest credential helpers for maintained hosts.
-Shared MCP instructions are available from `invompt-mcp/contracts`. These exports document the
-artifact boundary; they do not establish a supported external setup flow.
+Use the equivalent `status --json` command to inspect only redacted mode, backend, and binding status. This package has no postinstall prompt. It never packages a credential or writes one to a manifest or host configuration.
 
-## Security model
+## State and switching
 
-- The fixed loopback transport at `http://localhost:3101/mcp` is allowed by default.
-- Remote transports require an explicitly trusted, exact HTTPS origin.
-- Wildcards, paths, credentials, queries, fragments, and redirects are rejected.
-- Credentials stay in the official host setup; do not place them in source code or launch
-  manifests.
-- There is no invoice database client, REST fallback, or product business logic in the package.
+Guest credentials use macOS Keychain first: service `com.invompt.invompt-mcp`, account `guest-credential`. `--allow-file-fallback` is required before the restricted-permission plaintext fallback path `~/.invompt/guest-credential` (permissions `0600`) may be used. Non-secret state is `~/.invompt/auth-state.json` (permissions `0600` in directory `0700`).
 
-## Package contents
+Guest to OAuth switching leaves the Guest credential dormant. It never auto-converts or claims a Guest workspace. `logout --host codex` or `logout --host claude-code` removes the selected host configuration. `reset --yes` removes local state and attempts online Guest revocation; an offline revocation failure means copied credentials may remain valid and is reported as a warning.
 
-The npm package intentionally contains only the public bridge and its portable host assets.
-`@invompt/mcp-core` and `@invompt/mcp-testkit` are private workspace packages used to compose and
-verify the transport-neutral contract; they are not npm install targets.
+## Migration and rollback
+
+`0.11.0` adds explicit local-beta onboarding without migrating the Workspace Hub global OAuth consumer. Choose one local-beta mode. `--allow-file-fallback` is accepted only for Guest setup; unknown and duplicate flags fail closed. Roll back local-beta state with `logout --host …`, then use `reset --yes` only when removing local state and attempting Guest revocation. Restore the global consumer through its OAuth-only installer, not this package.
+
+## Error handling and privacy
+
+Offline/network failures and `5xx` responses are temporary: do not loop or silently retry credential issuance. A `401` Guest credential is invalid or revoked; use deliberate reset/recovery before another setup attempt, especially when the recorded secret backend is unavailable. A `429` must honor `Retry-After`. A host CLI error means setup needs reconciliation, not that the host is configured.
+
+The package derives no hardware or device fingerprint and collects no serial data or MAC addresses. The server-issued Guest credential is the sole pseudonymous local identity; it is stored in Keychain by default and is never used to derive device identity. It bundles with no runtime dependencies, rejects redirects, and forwards JSON-RPC only for the selected connection mode.
 
 ## Development
 
-From the repository root:
+Use Node 22.22.0 and npm 11.11.0:
 
 ```sh
 npm ci
 npm run check
 ```
 
-`npm run check` builds every workspace and runs type, lint, test, privacy, package-content, and
-isolated tarball checks. Local source checks do not prove external registry availability or host compatibility.
-
-The `next` channel contains development builds and is not a production channel or support promise.
-
-## Resources
-
-- [Invompt integrations](https://invompt.com/integrations)
-- [Source repository](https://github.com/Invompt/invompt-mcp)
-- [Contributing guide](https://github.com/Invompt/invompt-mcp/blob/main/CONTRIBUTING.md)
-- [Security policy](https://github.com/Invompt/invompt-mcp/blob/main/SECURITY.md)
-- [Third-party notices](THIRD_PARTY_NOTICES.md)
+`npm run check` builds, typechecks, lints, tests, scans source and packed artifacts, verifies the exact file allowlist, and checks an isolated tarball-only consumer. These local checks do not prove an external release or fresh-host verification.
 
 ## License
 
