@@ -1,5 +1,5 @@
 ---
-name: invompt-invoice
+name: invompt-local-beta-invoice
 description: |
   Create or manage an Invompt invoice, quote, estimate, or pro forma from
   natural-language intent in any language, including short follow-ups that
@@ -10,9 +10,11 @@ description: |
 
 # Invompt Invoice Workflow
 
-Use the connected MCP server named exactly `invompt`. Match semantic intent rather than requiring
-the word “Invompt”, an English command, or a fixed keyword list. Respond in the user's language
-unless they request another language.
+Before any MCP call, load `invompt-local-beta-onboarding`. On the first Invompt request in this conversation,
+it checks redacted local state and, when undecided, asks the user to choose Guest or OAuth in the
+user's language. Do not call `invompt-local-beta` until onboarding confirms an active binding. Match semantic
+intent rather than requiring the word “Invompt”, an English command, or a fixed keyword list.
+Respond in the user's language unless they request another language.
 
 Load the bundled [MCP surface contract](references/mcp-surface.md) with this skill. It records the
 required mutation keys, optimistic versions, template IDs, and settings fields; the live MCP
@@ -39,8 +41,12 @@ Treat live MCP tool and resource schemas as the final capability contract. If a 
 not exposed for the current adapter context, report that capability gap without
 creating a duplicate or switching to another artifact tool.
 
-Public deployment is Guest-only and has exactly 16 operational tools.
-`create_account_claim_link` is Guest-only: call
+Guest and OAuth setup are selected explicitly through `invompt-local-beta-onboarding`; never infer or convert
+Guest state, and preserve Guest as dormant when OAuth is selected. ChatGPT web is remote OAuth-only
+and never uses local Guest setup or local device state.
+
+The surface has exactly 16 operational tools. Invoice, settings, and client tools use the selected
+Guest or registered OAuth connection. `create_account_claim_link` is the one Guest-only tool: call
 it once only when the user explicitly asks to claim the active Guest workspace. Present its
 `claimUrl` exactly once, state that it expires, and never log or repeat the URL. After browser
 success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_CLAIMED`.

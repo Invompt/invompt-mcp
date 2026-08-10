@@ -1,7 +1,7 @@
 {
-  "name": "invompt-mcp",
-  "version": "0.10.3",
-  "description": "Create and manage saved clients, invoices, quotes, estimates, and pro formas from natural-language requests in any language.",
+  "name": "invompt-local-beta",
+  "version": "0.11.0",
+  "description": "Local-beta Invompt onboarding and invoice workflows. Select Guest or OAuth in the current conversation before configuring MCP.",
   "author": {
     "name": "Invompt",
     "url": "https://invompt.com"
@@ -18,8 +18,8 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Invompt",
-    "shortDescription": "Manage clients and invoices from natural language",
+    "displayName": "Invompt Local Beta",
+    "shortDescription": "Test local-beta invoice onboarding and workflows",
     "longDescription": "Turn billing requests in any language into hosted Invompt invoices, quotes, estimates, and pro formas; search and manage saved clients; then retrieve, update, or archive documents through the Invompt MCP server.",
     "developerName": "Invompt",
     "category": "Productivity",

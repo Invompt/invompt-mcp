@@ -1,7 +1,0 @@
-interface:
-  display_name: "Invompt Invoice"
-  short_description: "Create and manage invoices in any language"
-  default_prompt: "Use $invompt-invoice to create a hosted invoice from these billing details."
-
-policy:
-  allow_implicit_invocation: true

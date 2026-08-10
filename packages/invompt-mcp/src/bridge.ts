@@ -1,9 +1,13 @@
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
-import { GUEST_CREDENTIAL_HEADER, readGuestCredential } from './guest-credential.js'
+import { GUEST_CREDENTIAL_HEADER } from './guest-credential.js'
+import { HOSTED_MCP_URL } from './onboarding/host-config.js'
+import { resolveGuestCredentialForBridge } from './onboarding/service.js'
+import type { HostName } from './onboarding/types.js'
 
 export const DEFAULT_PRIVATE_MCP_URL = 'http://localhost:3101/mcp'
+export const DEFAULT_GUEST_MCP_URL = HOSTED_MCP_URL
 export const TRUSTED_PRIVATE_MCP_ORIGINS_ENV = 'INVOMPT_TRUSTED_MCP_ORIGINS'
 
 const TRUSTED_LOCAL_MCP_ORIGINS = new Set(['http://localhost:3101', 'http://127.0.0.1:3101', 'http://[::1]:3101'])
@@ -33,6 +37,10 @@ export interface StartBridgeOptions {
   trustedPrivateMcpOrigins?: readonly string[]
   stdioTransport?: MessageTransport
   remoteTransport?: MessageTransport
+  /** Checked before every client request so a mode switch cannot leave a dormant Guest bridge active. */
+  modeGuard?: () => boolean
+  credentialResolver?: (host: HostName) => { credential: string; guard?: () => boolean }
+  host?: HostName
 }
 
 function parseUrl(value: string, errorMessage: string): URL {
@@ -73,7 +81,7 @@ export function validatePrivateMcpUrl(value: string, trustedOrigins: readonly st
   const canonicalEndpoint = `${url.origin}/mcp`
   if (value !== canonicalEndpoint || url.href !== canonicalEndpoint) throw new Error(errorMessage)
 
-  if (TRUSTED_LOCAL_MCP_ORIGINS.has(url.origin)) return url
+  if (TRUSTED_LOCAL_MCP_ORIGINS.has(url.origin) || value === HOSTED_MCP_URL) return url
 
   const exactTrustedOrigins = new Set(trustedOrigins.map(validateTrustedPrivateMcpOrigin))
   if (url.protocol !== 'https:' || !exactTrustedOrigins.has(url.origin)) {
@@ -90,12 +98,19 @@ function protocolVersion(message: JsonRpcMessage): string | undefined {
 
 export async function startBridge(options: StartBridgeOptions = {}): Promise<void> {
   const privateMcpUrl = validatePrivateMcpUrl(
-    options.privateMcpUrl ?? process.env.INVOMPT_PRIVATE_MCP_URL ?? DEFAULT_PRIVATE_MCP_URL,
+    options.privateMcpUrl ?? process.env.INVOMPT_PRIVATE_MCP_URL ?? DEFAULT_GUEST_MCP_URL,
     options.trustedPrivateMcpOrigins ?? parseTrustedPrivateMcpOrigins(process.env[TRUSTED_PRIVATE_MCP_ORIGINS_ENV]),
   )
-  const credential = options.guestCredential ?? readGuestCredential()
-  if (!credential)
-    throw new Error('A Guest credential is required. Set INVOMPT_GUEST_CREDENTIAL or bootstrap one first.')
+  const resolved = options.guestCredential
+    ? { credential: options.guestCredential, guard: options.modeGuard }
+    : (() => {
+        if (!options.host) throw new Error('Guest serve requires --host claude-code or --host codex.')
+        return options.credentialResolver
+          ? options.credentialResolver(options.host)
+          : resolveGuestCredentialForBridge(options.host)
+      })()
+  const credential = resolved.credential
+  if (!credential) throw new Error('A selected Guest credential is required. Run invompt-mcp setup --mode guest.')
 
   const stdio: MessageTransport = options.stdioTransport ?? (new StdioServerTransport() as unknown as MessageTransport)
   const defaultRemote = options.remoteTransport
@@ -108,7 +123,27 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
       })
   const remote: MessageTransport = options.remoteTransport ?? (defaultRemote as unknown as MessageTransport)
 
+  let closing = false
+  const closeTransports = (...transports: MessageTransport[]): void => {
+    if (closing) return
+    closing = true
+    void Promise.allSettled(transports.map((transport) => transport.close()))
+  }
+  const guard = options.modeGuard ?? resolved.guard ?? (() => true)
+  const allowMessage = (): boolean => {
+    if (closing) return false
+    try {
+      if (guard()) return true
+      stdio.onerror?.(new Error('Guest mode changed on this device. Restart the MCP host after setup completes.'))
+    } catch {
+      stdio.onerror?.(new Error('Guest mode verification failed. Restart the MCP host after setup completes.'))
+    }
+    closeTransports(remote, stdio)
+    return false
+  }
+
   stdio.onmessage = (message) => {
+    if (!allowMessage()) return
     const version = protocolVersion(message)
     if (version) defaultRemote?.setProtocolVersion(version)
     void remote
@@ -116,16 +151,13 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
       .catch((error: unknown) => stdio.onerror?.(error instanceof Error ? error : new Error(String(error))))
   }
   remote.onmessage = (message) => {
+    if (!allowMessage()) return
     void stdio
       .send(message)
       .catch((error: unknown) => remote.onerror?.(error instanceof Error ? error : new Error(String(error))))
   }
-  stdio.onclose = () => {
-    void remote.close()
-  }
-  remote.onclose = () => {
-    void stdio.close()
-  }
+  stdio.onclose = () => closeTransports(remote)
+  remote.onclose = () => closeTransports(stdio)
   await remote.start()
   await stdio.start()
 }

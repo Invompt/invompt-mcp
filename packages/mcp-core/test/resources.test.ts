@@ -80,8 +80,9 @@ describe('getting-started resource', () => {
     const text = result.contents[0]?.text ?? ''
     expect(text).toContain('Invompt')
     expect(text).toContain('get_settings')
-    expect(text).toContain('server-issued Guest credential')
-    expect(text).toContain('Adapter-Owned Setup')
+    expect(text).toContain('server-issued pseudonymous local credential')
+    expect(text).toContain('separate registered OAuth')
+    expect(text).toContain('Connection Setup')
     expect(text).toContain('exactly 16 operational tools')
     expect(text).toContain('create_account_claim_link')
     expect(text).toContain('Present claimUrl exactly once')

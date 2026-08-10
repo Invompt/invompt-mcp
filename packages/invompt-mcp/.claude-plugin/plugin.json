@@ -1,7 +1,7 @@
 {
-  "name": "invompt",
-  "version": "0.10.3",
-  "description": "Create and manage professional invoices and saved clients from natural-language requests in any language.",
+  "name": "invompt-local-beta",
+  "version": "0.11.0",
+  "description": "Local-beta Invompt onboarding and invoice workflows. Select Guest or OAuth in the current conversation before configuring MCP.",
   "author": {
     "name": "Invompt",
     "url": "https://invompt.com"
@@ -16,11 +16,5 @@
     "billing",
     "mcp"
   ],
-  "mcpServers": {
-    "invompt": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"],
-      "cwd": "${CLAUDE_PLUGIN_ROOT}"
-    }
-  }
+  "skills": "./skills/"
 }

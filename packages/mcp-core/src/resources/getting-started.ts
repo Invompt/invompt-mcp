@@ -17,9 +17,10 @@ access to the invoicing workflow.
 2. Read the InvoML spec (invompt://spec/invoml/v1) — understand the Invoice
    Markup Language JSON format.
 
-3. When defaults matter and get_settings is exposed, read the connected adapter
-   workspace currency, invoice prefix, and payment terms. Public deployment is
-   Guest-only. When the user asks to change defaults, call update_settings with only the fields
+3. Before tool use, complete explicit onboarding for either Guest mode with a
+   server-issued pseudonymous local credential or separate registered OAuth over
+   hosted HTTPS. When defaults matter and get_settings is exposed, read the connected
+   workspace currency, invoice prefix, and payment terms. When the user asks to change defaults, call update_settings with only the fields
    they supplied and a stable 8–128 character idempotencyKey. Omitted settings
    stay unchanged; explicit null clears company name or currency.
 
@@ -87,8 +88,8 @@ access to the invoicing workflow.
   is a Guest-only mutation that creates a short-lived browser link for an explicit
   account-claim request. It accepts no secrets or identifiers as input.
 
-- Public MCP capabilities are defined by the live operational tool schemas. This
-  deployment uses Guest mode, and create_account_claim_link is Guest-only.
+- Guest onboarding and registered OAuth are separate connection modes. Do not call
+  create_account_claim_link while connected through OAuth.
 
 ## Tips
 
@@ -104,16 +105,16 @@ access to the invoicing workflow.
 - Treat meta.number as final authored data. If a final document number is
   missing, ask for it; never persist a made-up sequential or DRAFT number.
 
-## Adapter-Owned Setup
+## Connection Setup
 
-Authentication material is supplied by the configured private adapter, not by
-this transport-neutral core or an invoice tool. Maintained public hosts use a
-server-issued Guest credential; agents must never discover, copy, print, or
-synthesize it. When the user explicitly asks to claim the active Guest workspace,
-call create_account_claim_link once. Present claimUrl exactly once, explain that it
-expires, and never log or repeat it. Do not include credentials, account IDs, claim
-IDs, or other internal identifiers. After the browser claim succeeds, the old Guest
-credential returns GUEST_ACCOUNT_CLAIMED; do not retry it.
+Complete onboarding before calling an invoice tool. Guest mode uses a server-issued
+pseudonymous local credential; registered OAuth is a separate hosted HTTPS sign-in.
+Agents must never discover, copy, print, or synthesize authentication material. When
+the user explicitly asks to claim the active Guest workspace, call
+create_account_claim_link once. Present claimUrl exactly once, explain that it expires,
+and never log or repeat it. Do not include credentials, account IDs, claim IDs, or
+other internal identifiers. After the browser claim succeeds, the old Guest credential
+returns GUEST_ACCOUNT_CLAIMED; do not retry it.
 `
 
 export function registerGettingStartedResource(server: McpServer): void {

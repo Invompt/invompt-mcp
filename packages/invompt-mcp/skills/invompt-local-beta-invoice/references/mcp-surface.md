@@ -1,10 +1,12 @@
 # Invompt MCP Surface
 
-Use the tool schemas exposed by the connected server as the final authority. The packaged
-`invompt-mcp` stdio server currently exposes these surfaces.
+Use the tool schemas exposed by the connected server as the final authority. The connected
+Invompt MCP service exposes these surfaces after `invompt-local-beta-onboarding` confirms the selected Guest
+or OAuth connection.
 
-The surface has exactly 16 operational tools. `create_account_claim_link` is Guest-only and
-creates a short-lived browser claim link with no secret input.
+The surface has exactly 16 operational tools. Authentication is established by the selected Guest
+or OAuth connection. `create_account_claim_link` is Guest-only; ChatGPT web is a separate remote
+OAuth-only host and cannot create a Guest claim link.
 
 ## Resources
 
@@ -23,22 +25,22 @@ creates a short-lived browser claim link with no secret input.
 
 | Tool | Authentication | Mutability | Use |
 |---|---|---|---|
-| `ping` | Guest | Read-only | Connectivity and connected workspace state. |
-| `create_invoice` | Guest | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, URL, and version. |
-| `list_invoices` | Guest | Read-only | Search and page through owned invoices. |
-| `get_invoice` | Guest | Read-only | Retrieve full canonical InvoML. |
-| `update_invoice` | Guest | Idempotent update | Change content or template with expected-version protection, then return the canonical active hosted URL from authorized read-back; use the explicit audited correction object only to repair a wrong persisted number. |
-| `archive_invoice` | Guest | Idempotent destructive soft delete | Archive with expected-version protection. |
-| `unarchive_invoice` | Guest | Idempotent restore | Restore an archived invoice with expected-version protection. |
-| `renew_invoice_link` | Guest | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
+| `ping` | Selected Guest or registered OAuth connection | Read-only | Connectivity and connected workspace state. |
+| `create_invoice` | Selected Guest or registered OAuth connection | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, URL, and version. |
+| `list_invoices` | Selected Guest or registered OAuth connection | Read-only | Search and page through owned invoices. |
+| `get_invoice` | Selected Guest or registered OAuth connection | Read-only | Retrieve full canonical InvoML. |
+| `update_invoice` | Selected Guest or registered OAuth connection | Idempotent update | Change content or template with expected-version protection, then return the canonical active hosted URL from authorized read-back; use the explicit audited correction object only to repair a wrong persisted number. |
+| `archive_invoice` | Selected Guest or registered OAuth connection | Idempotent destructive soft delete | Archive with expected-version protection. |
+| `unarchive_invoice` | Selected Guest or registered OAuth connection | Idempotent restore | Restore an archived invoice with expected-version protection. |
+| `renew_invoice_link` | Selected Guest or registered OAuth connection | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
 | `create_account_claim_link` | Guest only | Non-idempotent mutation | Create a short-lived browser claim URL with no input. Present it once, explain expiry, and never log it. |
-| `get_settings` | Guest | Read-only | Read company, currency, numbering, and payment defaults. |
-| `update_settings` | Guest | Idempotent update | Partially update invoice defaults without inventing omitted values. |
-| `list_clients` | Guest | Read-only | Search saved clients and receive deterministic exact/ambiguous/none resolution. |
-| `get_client` | Guest | Read-only | Read one structured billing party without private notes or rich HTML. |
-| `create_client` | Guest | Idempotent create | Explicitly save after user choice; protect against unconfirmed duplicates. |
-| `update_client` | Guest | Idempotent update | Partially edit with expected-version conflict protection. |
-| `archive_client` | Guest | Destructive soft delete | Archive after explicit confirmation; preserve invoice history. |
+| `get_settings` | Selected Guest or registered OAuth connection | Read-only | Read company, currency, numbering, and payment defaults. |
+| `update_settings` | Selected Guest or registered OAuth connection | Idempotent update | Partially update invoice defaults without inventing omitted values. |
+| `list_clients` | Selected Guest or registered OAuth connection | Read-only | Search saved clients and receive deterministic exact/ambiguous/none resolution. |
+| `get_client` | Selected Guest or registered OAuth connection | Read-only | Read one structured billing party without private notes or rich HTML. |
+| `create_client` | Selected Guest or registered OAuth connection | Idempotent create | Explicitly save after user choice; protect against unconfirmed duplicates. |
+| `update_client` | Selected Guest or registered OAuth connection | Idempotent update | Partially edit with expected-version conflict protection. |
+| `archive_client` | Selected Guest or registered OAuth connection | Destructive soft delete | Archive after explicit confirmation; preserve invoice history. |
 
 For a named recipient, search saved clients first. Auto-select only an exact unique match. Ask the
 user to choose among multiple matches. With no match, ask one question offering save-and-assign or

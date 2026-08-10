@@ -1,30 +1,61 @@
 {
-  "schemaVersion": 1,
-  "canonicalHosts": {
-    "localMcp": "http://localhost:3101/mcp"
-  },
-  "transportPolicy": {
-    "default": "exact-loopback-mcp",
-    "optionalExplicitTrustedHttpsOrigins": true,
-    "rejects": ["wildcards", "paths", "credentials", "queries", "fragments", "redirects"]
-  },
+  "schemaVersion": 2,
+  "pluginIdentity": "invompt-local-beta",
+  "skillIdentities": ["invompt-local-beta-invoice", "invompt-local-beta-onboarding"],
   "releaseChannel": {
-    "status": "public-development-pre-1.0",
+    "status": "local-beta-pre-1.0",
     "next": "development-only",
-    "externalRegistryVerificationRequired": true
+    "externalRegistryVerificationRequired": true,
+    "productionClaim": false
   },
-  "verificationContract": {
-    "scope": "source-repository",
-    "sourceCommand": "npm run verify:pack",
-    "successStatus": "passed"
+  "endpoints": {
+    "hostedMcp": "https://mcp.invompt.com/mcp",
+    "webCredentialLifecycle": "https://invompt.com",
+    "loopbackDevelopmentMcp": "http://localhost:3101/mcp"
+  },
+  "localState": {
+    "authState": "~/.invompt/auth-state.json",
+    "guestSecret": "macOS Keychain service com.invompt.invompt-mcp, account guest-credential",
+    "fileFallback": "~/.invompt/guest-credential only with --allow-file-fallback",
+    "guestToOauth": "Guest remains dormant when OAuth is selected"
   },
   "runtimes": [
-    { "id": "claude-code", "artifact": ".claude-plugin/plugin.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" },
-    { "id": "codex", "artifact": ".codex-plugin/plugin.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" },
-    { "id": "gemini-cli", "artifact": "gemini-extension.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" },
-    { "id": "qwen-code", "artifact": "qwen-extension.json", "status": "package-contract-verified", "freshHostStatus": "external-verification-required" }
+    {
+      "id": "claude-code",
+      "artifact": ".claude-plugin/plugin.json",
+      "scope": "local-beta-macos",
+      "modes": ["guest-stdio", "oauth-http"],
+      "status": "package-contract-verified",
+      "freshHostStatus": "external-verification-required"
+    },
+    {
+      "id": "codex",
+      "artifact": ".codex-plugin/plugin.json",
+      "scope": "local-beta-macos",
+      "modes": ["guest-stdio", "oauth-http"],
+      "status": "package-contract-verified",
+      "freshHostStatus": "external-verification-required"
+    },
+    {
+      "id": "chatgpt-web",
+      "scope": "remote",
+      "modes": ["oauth-http"],
+      "status": "remote-oauth-only",
+      "localDeviceState": "not-used",
+      "freshHostStatus": "external-verification-required"
+    }
+  ],
+  "templates": [
+    { "id": "gemini-cli", "artifact": "gemini-extension.json", "status": "template-not-supported" },
+    { "id": "qwen-code", "artifact": "qwen-extension.json", "status": "template-not-supported" }
   ],
   "surfaces": [
-    { "id": "stdio-bridge", "artifact": "dist/index.js", "sourceVerificationCommand": "npm run verify:pack", "status": "package-contract-verified", "boundary": "package" }
+    {
+      "id": "stdio-bridge",
+      "artifact": "dist/index.js",
+      "sourceVerificationCommand": "npm run verify:pack",
+      "status": "package-contract-verified",
+      "boundary": "package"
+    }
   ]
 }
