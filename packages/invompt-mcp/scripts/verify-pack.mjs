@@ -226,16 +226,11 @@ try {
 
         const operationalToolNames = [
           'ping', 'create_invoice', 'list_invoices', 'get_invoice', 'update_invoice',
-          'archive_invoice', 'unarchive_invoice', 'renew_invoice_link', 'get_settings',
+          'archive_invoice', 'unarchive_invoice', 'renew_invoice_link', 'create_account_claim_link', 'get_settings',
           'update_settings', 'list_clients', 'get_client', 'create_client', 'update_client',
           'archive_client',
         ]
-        const deferredToolNames = ['approve_account_claim']
-        const toolNames = [
-          ...operationalToolNames.slice(0, 8),
-          ...deferredToolNames,
-          ...operationalToolNames.slice(8),
-        ]
+        const toolNames = [...operationalToolNames]
         const resourceNames = ['getting-started', 'invoml-spec']
         const promptNames = ['draft_invoice_invoml']
         const responses = {
@@ -247,10 +242,7 @@ try {
           'tools/list': {
             tools: toolNames.map((name) => ({
               name,
-              description:
-                name === 'approve_account_claim'
-                  ? 'Discovery-only Phase 2 placeholder. This tool is not operational in Phase 1 and must not be called.'
-                  : 'Phase 1 operational tool.',
+              description: 'Operational tool.',
               inputSchema: { type: 'object' },
             })),
           },
@@ -291,16 +283,12 @@ try {
         assert.equal(remote.started, true)
         assert.deepEqual(remote.sent.map(({ method }) => method), methods)
         assert.deepEqual(stdio.sent[1].result.tools.map(({ name }) => name), toolNames)
-        assert.equal(operationalToolNames.length, 15)
-        assert.deepEqual(deferredToolNames, ['approve_account_claim'])
-        assert.match(
-          stdio.sent[1].result.tools.find(({ name }) => name === 'approve_account_claim').description,
-          /Discovery-only Phase 2 placeholder.*must not be called/,
-        )
+        assert.equal(operationalToolNames.length, 16)
+        assert.equal(toolNames.includes('create_account_claim_link'), true)
         assert.deepEqual(stdio.sent[2].result.resources.map(({ name }) => name), resourceNames)
         assert.deepEqual(stdio.sent[3].result.prompts.map(({ name }) => name), promptNames)
         assert.equal(ISSUER_IDENTITY_INSTRUCTION, 'issuer may be omitted; never invent issuer identity')
-        assert.match(GUEST_MCP_INSTRUCTIONS, /15 operational tools.*discovery-only Phase 2 placeholder.*must not be called/)
+        assert.match(GUEST_MCP_INSTRUCTIONS, /create_account_claim_link.*present claimUrl exactly once.*GUEST_ACCOUNT_CLAIMED/)
         assert.equal(validatePrivateMcpUrl('http://localhost:3101/mcp').href, 'http://localhost:3101/mcp')
         assert.throws(() => validatePrivateMcpUrl('https://credential-sink.example/mcp'))
         assert.equal(

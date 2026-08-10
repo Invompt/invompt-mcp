@@ -137,18 +137,9 @@ export interface UnarchiveInvoiceResult extends Record<string, unknown> {
   replayed: boolean
 }
 
-/**
- * Approves a claim intent that was created by the registered Invompt Web app.
- * Both secrets are 32-byte, canonical base64url values (43 characters).
- */
-export interface ApproveAccountClaimInput {
-  intentId: string
-  nonce: string
-}
-
-export interface ApproveAccountClaimResult extends Record<string, unknown> {
-  approvalProof: string
-  replayed: boolean
+export interface CreateAccountClaimLinkResult extends Record<string, unknown> {
+  claimUrl: string
+  expiresAt: string
 }
 
 export interface RenewInvoiceLinkInput {

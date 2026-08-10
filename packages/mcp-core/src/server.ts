@@ -5,9 +5,9 @@ import { registerDraftInvoicePrompt } from './prompts/draft-invoice.js'
 import { registerGettingStartedResource } from './resources/getting-started.js'
 import { registerInvomlSpecResource } from './resources/invoml-spec.js'
 import type { InvomptService } from './service.js'
-import { registerApproveAccountClaimTool } from './tools/approve-account-claim.js'
 import { registerArchiveClientTool } from './tools/archive-client.js'
 import { registerArchiveInvoiceTool } from './tools/archive-invoice.js'
+import { registerCreateAccountClaimLinkTool } from './tools/create-account-claim-link.js'
 import { registerCreateClientTool } from './tools/create-client.js'
 import { registerCreateInvoiceTool } from './tools/create-invoice.js'
 import { registerGetClientTool } from './tools/get-client.js'
@@ -37,7 +37,7 @@ export function registerMcpSurface(server: McpRegistrar, service: InvomptService
   registerArchiveInvoiceTool(server, service)
   registerUnarchiveInvoiceTool(server, service)
   registerRenewInvoiceLinkTool(server, service)
-  registerApproveAccountClaimTool(server, service)
+  registerCreateAccountClaimLinkTool(server, service)
   registerGetSettingsTool(server, service)
   registerUpdateSettingsTool(server, service)
   registerListClientsTool(server, service)

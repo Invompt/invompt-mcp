@@ -28,6 +28,7 @@ schemas remain final if the connected server exposes a newer compatible surface.
 | Find or read existing documents | Use `list_invoices` and `get_invoice` when exposed. |
 | Revise, translate, correct, or restyle an existing document | Use `update_invoice` when exposed. |
 | Renew an expired hosted link | Use `renew_invoice_link` when exposed. |
+| Claim the active Guest workspace into an account | In Guest mode only, call `create_account_claim_link` once and present its expiring URL once. |
 | Archive an existing document | Confirm the target and authorization, then use `archive_invoice`. |
 | Read invoice defaults | Use `get_settings` only when exposed and invoice defaults matter. |
 | Change invoice defaults | Use `update_settings` with only user-supplied fields and a stable idempotency key. |
@@ -38,11 +39,11 @@ Treat live MCP tool and resource schemas as the final capability contract. If a 
 not exposed for the current adapter context, report that capability gap without
 creating a duplicate or switching to another artifact tool.
 
-Public Phase 1 is Guest-only; account-auth and account-claim setup are owned by
-the private adapter and are not capabilities of this package.
-
-Phase 1 has 15 operational tools. `approve_account_claim` is discovery-only and
-deferred to Phase 2; do not call it even when it appears in discovery.
+Public deployment is Guest-only and has exactly 16 operational tools.
+`create_account_claim_link` is Guest-only: call
+it once only when the user explicitly asks to claim the active Guest workspace. Present its
+`claimUrl` exactly once, state that it expires, and never log or repeat the URL. After browser
+success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_CLAIMED`.
 
 ## Create A Document
 
@@ -127,5 +128,5 @@ deferred to Phase 2; do not call it even when it appears in discovery.
 - Never create a replacement PDF, document, site, code artifact, or filesystem output.
 - Never launch Chromium, Puppeteer, or a PDF CLI for this workflow.
 - Never silently switch to another MCP server or environment.
-- Never call the discovery-only `approve_account_claim` placeholder in Phase 1.
+- Never include credentials, account IDs, claim IDs, nonces, or OAuth data in account-claim input or output.
 - Return Invompt's hosted URL; the Web product owns preview and download/print.

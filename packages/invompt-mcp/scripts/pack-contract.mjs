@@ -77,6 +77,7 @@ const OPERATIONAL_TOOL_SOURCES = Object.freeze([
   ['../mcp-core/src/tools/archive-invoice.ts', 'archive_invoice'],
   ['../mcp-core/src/tools/unarchive-invoice.ts', 'unarchive_invoice'],
   ['../mcp-core/src/tools/renew-invoice-link.ts', 'renew_invoice_link'],
+  ['../mcp-core/src/tools/create-account-claim-link.ts', 'create_account_claim_link'],
   ['../mcp-core/src/tools/get-settings.ts', 'get_settings'],
   ['../mcp-core/src/tools/update-settings.ts', 'update_settings'],
   ['../mcp-core/src/tools/list-clients.ts', 'list_clients'],
@@ -213,10 +214,10 @@ export function verifyPackContract({
     'public contracts subpath exports the exact issuer instruction',
   )
   assert(
-    /15 operational tools.*approve_account_claim is a discovery-only Phase 2 placeholder and must not be called/.test(
-      exportedGuestInstructions,
-    ),
-    'public contracts subpath marks the sixteenth tool as discovery-only and Phase 2 deferred',
+    exportedGuestInstructions.includes('create_account_claim_link') &&
+      exportedGuestInstructions.includes('present claimUrl exactly once') &&
+      exportedGuestInstructions.includes('GUEST_ACCOUNT_CLAIMED'),
+    'public contracts subpath documents the operational link-first Guest claim flow',
   )
   assert(
     readText('src/contracts.ts') === readText('../mcp-core/src/contracts.ts'),
@@ -254,17 +255,25 @@ export function verifyPackContract({
   assert(!gettingStartedSource.includes('INVOMPT_GUEST_CREDENTIAL'), 'getting-started resource exposes no credential materialization instructions')
   assert(!gettingStartedSource.includes('~/.invompt/'), 'getting-started resource exposes no private credential path')
   assert(
-    gettingStartedSource.includes('Phase 1 exposes 15 operational') &&
-      gettingStartedSource.includes('discovery-only Phase 2') &&
-      gettingStartedSource.includes('must not be called in Phase 1'),
-    'getting-started resource distinguishes the 15 operational tools from the Phase 2 placeholder',
+    gettingStartedSource.includes('exactly 16 operational tools') &&
+      gettingStartedSource.includes('create_account_claim_link') &&
+      gettingStartedSource.includes('Present claimUrl exactly once') &&
+      gettingStartedSource.includes('GUEST_ACCOUNT_CLAIMED') &&
+      gettingStartedSource.includes('server-issued Guest credential'),
+    'getting-started resource documents the input-free link-first Guest claim flow',
   )
-  const approveAccountClaimSource = readText('../mcp-core/src/tools/approve-account-claim.ts')
+  const createAccountClaimLinkSource = readText('../mcp-core/src/tools/create-account-claim-link.ts')
   assert(
-    approveAccountClaimSource.includes('Discovery-only Phase 2 placeholder') &&
-      approveAccountClaimSource.includes('ACCOUNT_CLAIM_PHASE_2_DEFERRED') &&
-      !approveAccountClaimSource.includes('client.approveAccountClaim'),
-    'approve_account_claim is discovery-only, fail-closed, and cannot invoke the service in Phase 1',
+    createAccountClaimLinkSource.includes("'create_account_claim_link'") &&
+      createAccountClaimLinkSource.includes('inputSchema: {}') &&
+      createAccountClaimLinkSource.includes('client.isGuest()') &&
+      createAccountClaimLinkSource.includes('ACCOUNT_CLAIM_OAUTH_FORBIDDEN') &&
+      createAccountClaimLinkSource.includes('client.createAccountClaimLink()') &&
+      createAccountClaimLinkSource.includes('readOnlyHint: false') &&
+      createAccountClaimLinkSource.includes('idempotentHint: false') &&
+      createAccountClaimLinkSource.includes('openWorldHint: false') &&
+      !createAccountClaimLinkSource.includes('replayed'),
+    'create_account_claim_link is Guest-only, input-free, and annotated as a closed non-idempotent mutation',
   )
   const skillSource = readText('skills/invompt-invoice/SKILL.md')
   const skillMirror = readText('.agents/skills/invompt-invoice/SKILL.md')
@@ -273,38 +282,45 @@ export function verifyPackContract({
   assert(skillSource === skillMirror, 'packaged skill and generated agent mirror are byte-identical')
   assert(surfaceSource === surfaceMirror, 'packaged MCP reference and generated agent mirror are byte-identical')
   assert(
-    skillSource.includes('Public Phase 1 is Guest-only') &&
-      skillSource.includes('private adapter'),
-    'packaged skill describes Phase 1 as Guest-only and account flows as private adapter-owned',
+    skillSource.includes('Public deployment is Guest-only') &&
+      skillSource.includes('create_account_claim_link') &&
+      skillSource.includes('GUEST_ACCOUNT_CLAIMED'),
+    'packaged skill documents the operational link-first Guest account claim',
   )
   assert(
-    surfaceSource.includes('Public Phase 1 deployment is Guest-only') &&
-      surfaceSource.includes('private adapter'),
-    'packaged MCP reference marks public Phase 1 as Guest-only and private-adapter-owned account auth',
+    surfaceSource.includes('exactly 16 operational tools') &&
+      surfaceSource.includes('create_account_claim_link') &&
+      surfaceSource.includes('GUEST_ACCOUNT_CLAIMED'),
+    'packaged MCP reference documents the operational link-first Guest account claim',
   )
-  assert(OPERATIONAL_TOOL_SOURCES.length === 15, 'pack-contract inspects the exact 15 operational tool sources')
+  assert(OPERATIONAL_TOOL_SOURCES.length === 16, 'pack-contract inspects the exact 16 operational tool sources')
   for (const [path, toolName] of OPERATIONAL_TOOL_SOURCES) {
     const contents = readText(path)
     assert(
       contents.includes(`'${toolName}'`) || contents.includes(`\"${toolName}\"`),
       `${path} exposes operational tool registration for ${toolName}`,
     )
-    assert(
-      !/connected Guest workspace|guest or account|account or guest|guest-company/i.test(contents),
-      `${path} remains authentication-neutral for adapter composition`,
-    )
+    if (toolName === 'create_account_claim_link') {
+      assert(
+        contents.includes('client.isGuest()') && contents.includes('ACCOUNT_CLAIM_OAUTH_FORBIDDEN'),
+        `${path} is explicitly Guest-only and fails closed for OAuth`,
+      )
+    } else {
+      assert(
+        !/connected Guest workspace|guest or account|account or guest|guest-company/i.test(contents),
+        `${path} remains authentication-neutral for adapter composition`,
+      )
+    }
   }
   for (const [path, contents] of [
     ['skills/invompt-invoice/SKILL.md', skillSource],
     ['skills/invompt-invoice/references/mcp-surface.md', surfaceSource],
   ]) {
     assert(
-      contents.includes('15 operational tools') &&
-        contents.includes('approve_account_claim') &&
-        contents.includes('discovery-only') &&
-        contents.includes('Phase 2') &&
-        contents.toLowerCase().includes('do not call'),
-      `${path} marks account claim as the non-operational Phase 2 discovery placeholder`,
+      contents.includes('exactly 16 operational tools') &&
+        contents.includes('create_account_claim_link') &&
+        contents.includes('GUEST_ACCOUNT_CLAIMED'),
+      `${path} documents the operational link-first Guest account claim`,
     )
   }
 

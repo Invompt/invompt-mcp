@@ -1,12 +1,11 @@
 import type {
-  ApproveAccountClaimInput,
-  ApproveAccountClaimResult,
   ArchiveClientInput,
   ArchiveClientResult,
   ArchiveInvoiceInput,
   ArchiveInvoiceResult,
   CreateClientInput,
   CreateClientResult,
+  CreateAccountClaimLinkResult,
   CreateInvoiceInput,
   GetClientResult,
   InvoiceDetailResult,
@@ -47,8 +46,7 @@ export interface InvomptService {
   archiveInvoice(id: string, input: ArchiveInvoiceInput): Promise<ArchiveInvoiceResult>
   unarchiveInvoice(id: string, input: UnarchiveInvoiceInput): Promise<UnarchiveInvoiceResult>
   renewInvoiceLink(id: string, input: RenewInvoiceLinkInput): Promise<RenewInvoiceLinkResult>
-  /** Phase 2 contract placeholder; the Phase 1 discovery handler never invokes it. */
-  approveAccountClaim(input: ApproveAccountClaimInput): Promise<ApproveAccountClaimResult>
+  createAccountClaimLink(): Promise<CreateAccountClaimLinkResult>
   getSettings(): Promise<SettingsResult>
   updateSettings(input: UpdateSettingsInput): Promise<UpdateSettingsResult>
   listClients(params?: ListClientsParams): Promise<ListClientsResult>

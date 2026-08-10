@@ -9,7 +9,7 @@ export const EXPECTED_TOOL_NAMES = [
   'archive_invoice',
   'unarchive_invoice',
   'renew_invoice_link',
-  'approve_account_claim',
+  'create_account_claim_link',
   'get_settings',
   'update_settings',
   'list_clients',
@@ -19,10 +19,7 @@ export const EXPECTED_TOOL_NAMES = [
   'archive_client',
 ] as const
 
-export const PHASE_1_OPERATIONAL_TOOL_NAMES = EXPECTED_TOOL_NAMES.filter(
-  (name) => name !== 'approve_account_claim',
-)
-export const PHASE_2_DISCOVERY_ONLY_TOOL_NAMES = ['approve_account_claim'] as const
+export const OPERATIONAL_TOOL_NAMES = EXPECTED_TOOL_NAMES
 
 export const EXPECTED_RESOURCE_NAMES = ['getting-started', 'invoml-spec'] as const
 export const EXPECTED_PROMPT_NAMES = ['draft_invoice_invoml'] as const
@@ -42,7 +39,7 @@ export function createServiceFake(overrides: Partial<InvomptService> = {}): Invo
     archiveInvoice: unavailable,
     unarchiveInvoice: unavailable,
     renewInvoiceLink: unavailable,
-    approveAccountClaim: unavailable,
+    createAccountClaimLink: unavailable,
     getSettings: unavailable,
     updateSettings: unavailable,
     listClients: unavailable,
