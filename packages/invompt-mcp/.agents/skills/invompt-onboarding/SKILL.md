@@ -22,6 +22,9 @@ until the user has explicitly chosen a mode.
 Use the command for the current host. `status --json` reports only mode, Guest status/backend, and
 host bindings; it does not print the credential.
 
+This local-beta flow owns only the host server `invompt-local-beta`. Never remove, log out, or
+reconfigure the separate global `invompt` provider; it remains hosted OAuth-only.
+
 - Claude Code: `npx --yes invompt-mcp@0.11.0 status --json`
 - Codex: `npx --yes invompt-mcp@0.11.0 status --json`
 
@@ -76,7 +79,7 @@ warning accurately.
 
 ## 6. Continue
 
-After a confirmed active binding, load `invompt-invoice` for invoice work and follow live MCP tool
+After a confirmed active `invompt-local-beta` binding, load `invompt-invoice` for invoice work and follow live MCP tool
 schemas. The package exposes exactly 16 operational tools.
 
 ## 7. Claim an active Guest workspace only when asked

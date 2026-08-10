@@ -123,22 +123,27 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
       })
   const remote: MessageTransport = options.remoteTransport ?? (defaultRemote as unknown as MessageTransport)
 
-  stdio.onmessage = (message) => {
-    let modeActive = false
+  let closing = false
+  const closeTransports = (...transports: MessageTransport[]): void => {
+    if (closing) return
+    closing = true
+    void Promise.allSettled(transports.map((transport) => transport.close()))
+  }
+  const guard = options.modeGuard ?? resolved.guard ?? (() => true)
+  const allowMessage = (): boolean => {
+    if (closing) return false
     try {
-      modeActive = (options.modeGuard ?? resolved.guard ?? (() => true))()
+      if (guard()) return true
+      stdio.onerror?.(new Error('Guest mode changed on this device. Restart the MCP host after setup completes.'))
     } catch {
       stdio.onerror?.(new Error('Guest mode verification failed. Restart the MCP host after setup completes.'))
-      void remote.close()
-      void stdio.close()
-      return
     }
-    if (!modeActive) {
-      stdio.onerror?.(new Error('Guest mode changed on this device. Restart the MCP host after setup completes.'))
-      void remote.close()
-      void stdio.close()
-      return
-    }
+    closeTransports(remote, stdio)
+    return false
+  }
+
+  stdio.onmessage = (message) => {
+    if (!allowMessage()) return
     const version = protocolVersion(message)
     if (version) defaultRemote?.setProtocolVersion(version)
     void remote
@@ -146,16 +151,13 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
       .catch((error: unknown) => stdio.onerror?.(error instanceof Error ? error : new Error(String(error))))
   }
   remote.onmessage = (message) => {
+    if (!allowMessage()) return
     void stdio
       .send(message)
       .catch((error: unknown) => remote.onerror?.(error instanceof Error ? error : new Error(String(error))))
   }
-  stdio.onclose = () => {
-    void remote.close()
-  }
-  remote.onclose = () => {
-    void stdio.close()
-  }
+  stdio.onclose = () => closeTransports(remote)
+  remote.onclose = () => closeTransports(stdio)
   await remote.start()
   await stdio.start()
 }

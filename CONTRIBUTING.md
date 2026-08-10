@@ -8,7 +8,7 @@ Thanks for helping improve this public-development, pre-1.0 project.
 2. Preserve the self-contained stdio bridge boundary: no product REST fallback, database access, or network listener belongs in `invompt-mcp`.
 3. Keep `@invompt/mcp-core` and `@invompt/mcp-testkit` private workspace packages; only `invompt-mcp` is publishable.
 4. Use Node 22.22.0 and npm 11.11.0, then run `npm ci` and `npm run check`.
-5. Keep this CLI/local-beta lane separate from the Workspace Hub global consumer: the global consumer is hosted OAuth-only. Do not add Guest secrets, static authorization headers, local endpoints, or a second normal consumer provider to its configuration.
+5. Keep this CLI/local-beta lane on `invompt-local-beta`. Never target, remove, log out, or modify the Workspace Hub global `invompt` consumer; it remains hosted OAuth-only.
 
 ## Documentation and testing
 

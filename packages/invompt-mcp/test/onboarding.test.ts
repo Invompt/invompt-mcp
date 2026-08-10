@@ -154,10 +154,10 @@ describe('macOS beta onboarding', () => {
     expect(state.read().guest.status).toBe('none')
     expect(state.read().selectedMode).toBeNull()
     expect(hostCleanup).toEqual([
-      'claude mcp logout invompt',
-      'claude mcp remove invompt',
-      'codex mcp logout invompt',
-      'codex mcp remove invompt',
+      'claude mcp logout invompt-local-beta',
+      'claude mcp remove invompt-local-beta',
+      'codex mcp logout invompt-local-beta',
+      'codex mcp remove invompt-local-beta',
     ])
   })
 
@@ -166,7 +166,7 @@ describe('macOS beta onboarding', () => {
       'codex',
       'mcp',
       'add',
-      'invompt',
+      'invompt-local-beta',
       '--',
       'npx',
       '--yes',
@@ -175,8 +175,13 @@ describe('macOS beta onboarding', () => {
       '--host',
       'codex',
     ])
-    expect(hostCommands('claude-code', 'oauth', '0.11.0')[2]).toEqual(['claude', 'mcp', 'login', 'invompt'])
+    expect(hostCommands('claude-code', 'oauth', '0.11.0')[2]).toEqual(['claude', 'mcp', 'login', 'invompt-local-beta'])
     expect(JSON.stringify(hostCommands('claude-code', 'guest', '0.11.0'))).not.toContain(credential)
+    for (const host of ['claude-code', 'codex'] as const) {
+      for (const mode of ['guest', 'oauth'] as const) {
+        for (const command of hostCommands(host, mode, '0.11.0')) expect(command).not.toContain('invompt')
+      }
+    }
   })
 
   test('preserves the injected runner contract while configuring interactive OAuth login commands', async () => {
@@ -189,11 +194,11 @@ describe('macOS beta onboarding', () => {
       commands.push([command, ...args].join(' '))
       return { ok: true }
     })
-    expect(commands).toContain('claude mcp login invompt')
+    expect(commands).toContain('claude mcp login invompt-local-beta')
     expect(commands).toContain(
-      'codex mcp add invompt --url https://mcp.invompt.com/mcp --oauth-resource https://mcp.invompt.com/mcp',
+      'codex mcp add invompt-local-beta --url https://mcp.invompt.com/mcp --oauth-resource https://mcp.invompt.com/mcp',
     )
-    expect(commands).not.toContain('codex mcp login invompt')
+    expect(commands).not.toContain('codex mcp login invompt-local-beta')
   })
 
   test('uses exact Guest REST mutation contracts without automatic retries', async () => {
@@ -300,7 +305,7 @@ describe('macOS beta onboarding', () => {
         return { ok: true }
       },
     })
-    expect(commands).toEqual(['codex mcp remove invompt'])
+    expect(commands).toEqual(['codex mcp remove invompt-local-beta'])
     expect(state.read().guest.status).toBe('active')
     expect(state.read().bindings.codex?.status).toBe('unconfigured')
   })
@@ -359,6 +364,90 @@ describe('macOS beta onboarding', () => {
     })
     expect(() => stdio.receive({ jsonrpc: '2.0', id: 2, method: 'tools/list' })).not.toThrow()
     expect(guardErrors[0]?.message).toBe('Guest mode verification failed. Restart the MCP host after setup completes.')
+  })
+
+  test('drops remote responses and notifications after mode change and closes both directions once', async () => {
+    let active = true
+    let stdioCloses = 0
+    let remoteCloses = 0
+    const stdioErrors: Error[] = []
+    const stdio: MessageTransport & { sent: JsonRpcMessage[] } = {
+      sent: [],
+      onerror: (error) => stdioErrors.push(error),
+      async start() {},
+      async close() {
+        stdioCloses += 1
+        this.onclose?.()
+      },
+      async send(message) {
+        this.sent.push(message)
+      },
+    }
+    const remote: MessageTransport & { receive(message: JsonRpcMessage): void } = {
+      async start() {},
+      async close() {
+        remoteCloses += 1
+        this.onclose?.()
+      },
+      async send() {},
+      receive(message) {
+        this.onmessage?.(message)
+      },
+    }
+    await startBridge({
+      guestCredential: credential,
+      privateMcpUrl: 'http://localhost:3101/mcp',
+      stdioTransport: stdio,
+      remoteTransport: remote,
+      modeGuard: () => active,
+    })
+    remote.receive({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' })
+    expect(stdio.sent).toHaveLength(1)
+
+    active = false
+    remote.receive({ jsonrpc: '2.0', id: 7, result: { tools: [] } })
+    remote.receive({ jsonrpc: '2.0', method: 'notifications/resources/updated' })
+    await Promise.resolve()
+
+    expect(stdio.sent).toHaveLength(1)
+    expect(stdioErrors.map((error) => error.message)).toEqual([
+      'Guest mode changed on this device. Restart the MCP host after setup completes.',
+    ])
+    expect(stdioCloses).toBe(1)
+    expect(remoteCloses).toBe(1)
+  })
+
+  test('closes only the peer when one transport reports an existing close', async () => {
+    let stdioCloses = 0
+    let remoteCloses = 0
+    const stdio: MessageTransport = {
+      async start() {},
+      async close() {
+        stdioCloses += 1
+        this.onclose?.()
+      },
+      async send() {},
+    }
+    const remote: MessageTransport = {
+      async start() {},
+      async close() {
+        remoteCloses += 1
+        this.onclose?.()
+      },
+      async send() {},
+    }
+    await startBridge({
+      guestCredential: credential,
+      privateMcpUrl: 'http://localhost:3101/mcp',
+      stdioTransport: stdio,
+      remoteTransport: remote,
+    })
+
+    remote.onclose?.()
+    await Promise.resolve()
+
+    expect(stdioCloses).toBe(1)
+    expect(remoteCloses).toBe(0)
   })
 
   test('uses static JXA arguments with credential only on stdin and rejects fallback symlinks', async () => {
@@ -507,9 +596,12 @@ describe('macOS beta onboarding', () => {
     expect(host).toBe('codex')
     await expect(runCli(['serve'], { serve: async () => {} })).rejects.toThrow('--host must be claude-code or codex')
     await configureHost('codex', 'guest', '0.11.0', async (_command, args) =>
-      args[1] === 'remove' ? { ok: false, stderr: 'MCP server invompt not found' } : { ok: true },
+      args[1] === 'remove' ? { ok: false, stderr: 'MCP server invompt-local-beta not found' } : { ok: true },
     )
-    await removeHost('claude-code', async () => ({ ok: false, stderr: 'No MCP server named invompt' }))
+    await removeHost('claude-code', async () => ({ ok: false, stderr: 'No MCP server named invompt-local-beta' }))
+    await expect(
+      removeHost('claude-code', async () => ({ ok: false, stderr: 'No MCP server named invompt' })),
+    ).rejects.toThrow('Unable to remove')
     await expect(removeHost('codex', async () => ({ ok: false, stderr: 'permission denied' }))).rejects.toThrow(
       'Unable to remove',
     )
@@ -523,7 +615,7 @@ describe('macOS beta onboarding', () => {
         return { ok: false, stderr: 'permission denied' }
       }),
     ).rejects.toThrow('Unable to configure')
-    expect(attempted).toEqual(['claude mcp remove invompt'])
+    expect(attempted).toEqual(['claude mcp remove invompt-local-beta'])
   })
 
   test('chooses logout behavior from the host binding mode and fails closed on Guest removal denial', async () => {
@@ -545,7 +637,7 @@ describe('macOS beta onboarding', () => {
         return { ok: true }
       },
     })
-    expect(commands).toEqual(['codex mcp logout invompt'])
+    expect(commands).toEqual(['codex mcp logout invompt-local-beta'])
     await setup({ mode: 'guest', host: 'codex' }, { state, keychain, guestApi: guestApi(), runner: successfulRunner })
     await expect(
       logout('codex', { state, keychain, runner: async () => ({ ok: false, stderr: 'permission denied' }) }),
@@ -589,7 +681,7 @@ describe('macOS beta onboarding', () => {
         },
       },
     )
-    expect(commands.slice(0, 1)).toEqual(['codex mcp remove invompt'])
+    expect(commands.slice(0, 1)).toEqual(['codex mcp remove invompt-local-beta'])
     expect(state.read()).toMatchObject({
       selectedMode: 'guest',
       bindings: {

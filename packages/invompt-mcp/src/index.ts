@@ -31,7 +31,14 @@ export {
   validateGuestCredential,
 } from './guest-credential.js'
 export { createGuestApi, GuestApiError, INVOMPT_WEB_URL } from './onboarding/guest-api.js'
-export { configureHost, HOSTED_MCP_URL, hostCommands, logoutHost, removeHost } from './onboarding/host-config.js'
+export {
+  configureHost,
+  HOSTED_MCP_URL,
+  hostCommands,
+  LOCAL_BETA_MCP_SERVER_NAME,
+  logoutHost,
+  removeHost,
+} from './onboarding/host-config.js'
 export {
   createFileSecretStore,
   createKeychainSecretStore,

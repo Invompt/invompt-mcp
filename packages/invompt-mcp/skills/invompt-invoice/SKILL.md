@@ -12,7 +12,7 @@ description: |
 
 Before any MCP call, load `invompt-onboarding`. On the first Invompt request in this conversation,
 it checks redacted local state and, when undecided, asks the user to choose Guest or OAuth in the
-user's language. Do not call `invompt` until onboarding confirms an active binding. Match semantic
+user's language. Do not call `invompt-local-beta` until onboarding confirms an active binding. Match semantic
 intent rather than requiring the word “Invompt”, an English command, or a fixed keyword list.
 Respond in the user's language unless they request another language.
 

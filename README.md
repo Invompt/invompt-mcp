@@ -17,7 +17,7 @@ The local loopback development endpoint is `http://localhost:3101/mcp`; it is fo
 
 ChatGPT web is separate: it is remote OAuth-only at `https://mcp.invompt.com/mcp`. It must never run local status/setup, use a Guest bridge, or inspect local device state.
 
-This repository's CLI is a separate local-beta distribution. It does not replace, install, or redefine the Workspace Hub global consumer plugin, which remains one hosted HTTPS OAuth-only `invompt` provider. Do not run local-beta setup to change that normal consumer configuration.
+This repository's CLI is a separate local-beta distribution. It configures only `invompt-local-beta`; setup, logout, reset, and reconciliation never remove or modify `invompt`. The Workspace Hub global consumer remains one hosted HTTPS OAuth-only `invompt` provider.
 
 ## Setup
 
@@ -38,6 +38,8 @@ npx --yes invompt-mcp@0.11.0 setup --host claude-code --mode oauth
 ```
 
 Use `status --json` through the same current-host command to inspect redacted state. There is no postinstall prompt and no credential in a manifest or host configuration.
+
+The resulting MCP server is named `invompt-local-beta` on both hosts. Keep the normal global `invompt` provider separate and OAuth-only.
 
 Guest is Keychain-first on macOS (`com.invompt.invompt-mcp` / `guest-credential`). Only when you explicitly permit the fallback may setup add `--allow-file-fallback`; the fallback is restricted-permission plaintext at `~/.invompt/guest-credential` (mode `0600`). Non-secret local state is `~/.invompt/auth-state.json` (mode `0600` in a `0700` directory).
 

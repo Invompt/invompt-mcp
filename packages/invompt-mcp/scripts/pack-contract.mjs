@@ -260,6 +260,11 @@ export function verifyPackContract({
   assert(readme.includes('--allow-file-fallback') && readme.includes('auth-state.json'), 'packaged README documents explicit fallback and state paths')
   assert(readme.includes('no postinstall prompt'), 'packaged README states that setup has no postinstall prompt')
   assert(readme.includes('ChatGPT web is separate and remote OAuth-only'), 'packaged README distinguishes ChatGPT remote OAuth')
+  assert(
+    readme.includes('configures only `invompt-local-beta`') &&
+      readme.includes('never remove or modify `invompt`'),
+    'packaged README separates local beta from the global OAuth consumer',
+  )
   assert(readme.includes('no release, production, registry-availability'), 'packaged README makes no unverified release claim')
   assert(readText('THIRD_PARTY_NOTICES.md').includes('@modelcontextprotocol/sdk@1.30.0'), 'packed package includes deterministic bundled third-party notices')
 
@@ -303,7 +308,7 @@ export function verifyPackContract({
   assert(onboardingMetadata === onboardingMetadataMirror, 'packaged onboarding skill metadata and mirror are byte-identical')
   assert(
     skillSource.includes('Before any MCP call, load `invompt-onboarding`') &&
-      skillSource.includes('Do not call `invompt` until onboarding confirms an active binding'),
+      skillSource.includes('Do not call `invompt-local-beta` until onboarding confirms an active binding'),
     'invoice skill routes through onboarding before MCP calls',
   )
   assert(
@@ -311,6 +316,8 @@ export function verifyPackContract({
       onboardingSkill.includes('wait for an explicit `Guest` or `OAuth` choice') &&
       onboardingSkill.includes('leaves the Guest credential dormant') &&
       onboardingSkill.includes('ChatGPT web, use remote OAuth only') &&
+      onboardingSkill.includes('owns only the host server `invompt-local-beta`') &&
+      onboardingSkill.includes('global `invompt` provider') &&
       onboardingSkill.includes('npx --yes invompt-mcp@0.11.0 setup --host codex') &&
       onboardingSkill.includes('npx --yes invompt-mcp@0.11.0 setup --host claude-code') &&
       onboardingSkill.includes('deliberate reset/recovery') &&

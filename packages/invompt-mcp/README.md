@@ -15,7 +15,7 @@ Supported local-beta hosts are macOS Claude Code and Codex. Their plugin manifes
 
 `http://localhost:3101/mcp` is the loopback development endpoint. It is not a public host-default configuration. ChatGPT web is separate and remote OAuth-only: it connects to the hosted endpoint and must never run local status/setup, use Guest mode, or inspect local device state.
 
-This is a separate CLI/local-beta distribution. The Workspace Hub global consumer remains a single hosted HTTPS OAuth-only `invompt` provider; this package must not be used to add Guest credentials, static headers, or local-device state to that consumer configuration.
+This is a separate CLI/local-beta distribution. It configures only `invompt-local-beta`; setup, logout, reset, and reconciliation never remove or modify `invompt`. The Workspace Hub global consumer remains a single hosted HTTPS OAuth-only `invompt` provider.
 
 ## Explicit setup
 
@@ -36,6 +36,8 @@ npx --yes invompt-mcp@0.11.0 setup --host claude-code --mode oauth
 ```
 
 Use the equivalent `status --json` command to inspect only redacted mode, backend, and binding status. This package has no postinstall prompt. It never packages a credential or writes one to a manifest or host configuration.
+
+Both hosts name this package's connection `invompt-local-beta`. The normal global `invompt` connection remains separate and OAuth-only.
 
 ## State and switching
 
