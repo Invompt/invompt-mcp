@@ -14,4 +14,6 @@ Include the affected revision or package integrity, a minimal reproduction, impa
 
 This repository is a separate local-beta CLI and stdio-bridge distribution under the host name `invompt-local-beta`. Its lifecycle commands never target `invompt`. The Workspace Hub global consumer remains a single hosted HTTPS OAuth provider and must not gain Guest credentials, static headers, or local-device state through this package.
 
+Its plugin and skill discovery identities are likewise beta-scoped. Packaging the global `invompt`, `invompt-invoice`, `invompt-export`, or `invompt-health` identities is a security-boundary regression.
+
 Guest mode forwards only to `https://mcp.invompt.com/mcp` after an explicit local choice; the loopback endpoint is development-only. OAuth mode uses the host-native OAuth flow at the same hosted endpoint. Reports involving choice/mode isolation, credential storage or revocation, host configuration, redirect/origin checks, packed artifacts, release automation, and dependency provenance are in scope.

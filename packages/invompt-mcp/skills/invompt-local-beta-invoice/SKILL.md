@@ -1,5 +1,5 @@
 ---
-name: invompt-invoice
+name: invompt-local-beta-invoice
 description: |
   Create or manage an Invompt invoice, quote, estimate, or pro forma from
   natural-language intent in any language, including short follow-ups that
@@ -10,7 +10,7 @@ description: |
 
 # Invompt Invoice Workflow
 
-Before any MCP call, load `invompt-onboarding`. On the first Invompt request in this conversation,
+Before any MCP call, load `invompt-local-beta-onboarding`. On the first Invompt request in this conversation,
 it checks redacted local state and, when undecided, asks the user to choose Guest or OAuth in the
 user's language. Do not call `invompt-local-beta` until onboarding confirms an active binding. Match semantic
 intent rather than requiring the word “Invompt”, an English command, or a fixed keyword list.
@@ -41,7 +41,7 @@ Treat live MCP tool and resource schemas as the final capability contract. If a 
 not exposed for the current adapter context, report that capability gap without
 creating a duplicate or switching to another artifact tool.
 
-Guest and OAuth setup are selected explicitly through `invompt-onboarding`; never infer or convert
+Guest and OAuth setup are selected explicitly through `invompt-local-beta-onboarding`; never infer or convert
 Guest state, and preserve Guest as dormant when OAuth is selected. ChatGPT web is remote OAuth-only
 and never uses local Guest setup or local device state.
 

@@ -19,7 +19,7 @@ This is a separate CLI/local-beta distribution. It configures only `invompt-loca
 
 ## Explicit setup
 
-On first Invompt use, `invompt-onboarding` checks redacted status. When mode is undecided it asks, in the current conversation language, exactly whether the user wants **Guest** or **OAuth**, gives a brief explanation, and waits for an explicit choice.
+On first local-beta Invompt use, `invompt-local-beta-onboarding` checks redacted status. When mode is undecided it asks, in the current conversation language, exactly whether the user wants **Guest** or **OAuth**, gives a brief explanation, and waits for an explicit choice.
 
 For Codex, use the exact pinned CLI command after that choice:
 
@@ -38,6 +38,8 @@ npx --yes invompt-mcp@0.11.0 setup --host claude-code --mode oauth
 Use the equivalent `status --json` command to inspect only redacted mode, backend, and binding status. This package has no postinstall prompt. It never packages a credential or writes one to a manifest or host configuration.
 
 Both hosts name this package's connection `invompt-local-beta`. The normal global `invompt` connection remains separate and OAuth-only.
+
+The packaged plugin identity is also `invompt-local-beta`; its only skills are `invompt-local-beta-onboarding` and `invompt-local-beta-invoice`. It does not own or package the global `invompt-invoice`, `invompt-export`, or `invompt-health` discovery names.
 
 ## State and switching
 

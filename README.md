@@ -41,6 +41,8 @@ Use `status --json` through the same current-host command to inspect redacted st
 
 The resulting MCP server is named `invompt-local-beta` on both hosts. Keep the normal global `invompt` provider separate and OAuth-only.
 
+Plugin and skill discovery use the same isolated namespace: plugin `invompt-local-beta`, with skills `invompt-local-beta-onboarding` and `invompt-local-beta-invoice`. The package does not discover as global plugin `invompt` or as global skill `invompt-invoice`, `invompt-export`, or `invompt-health`.
+
 Guest is Keychain-first on macOS (`com.invompt.invompt-mcp` / `guest-credential`). Only when you explicitly permit the fallback may setup add `--allow-file-fallback`; the fallback is restricted-permission plaintext at `~/.invompt/guest-credential` (mode `0600`). Non-secret local state is `~/.invompt/auth-state.json` (mode `0600` in a `0700` directory).
 
 Switching Guest to OAuth leaves the Guest secret dormant. It is never auto-converted, claimed, or merged into an account. Use `logout --host codex` or `logout --host claude-code` for a deliberate host logout. `reset --yes` removes local state and attempts Guest revocation; if revocation cannot reach the service, copied credentials may remain valid and the CLI reports that warning.

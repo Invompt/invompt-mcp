@@ -1,5 +1,5 @@
 ---
-name: invompt-onboarding
+name: invompt-local-beta-onboarding
 description: Set up or check the local-beta Invompt MCP connection before any Invompt tool use. Use on the first Invompt request in Claude Code or Codex; select Guest or OAuth explicitly in the user's language. ChatGPT web is remote OAuth-only and never uses local setup.
 ---
 
@@ -79,7 +79,7 @@ warning accurately.
 
 ## 6. Continue
 
-After a confirmed active `invompt-local-beta` binding, load `invompt-invoice` for invoice work and follow live MCP tool
+After a confirmed active `invompt-local-beta` binding, load `invompt-local-beta-invoice` for invoice work and follow live MCP tool
 schemas. The package exposes exactly 16 operational tools.
 
 ## 7. Claim an active Guest workspace only when asked

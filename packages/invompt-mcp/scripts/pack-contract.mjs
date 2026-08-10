@@ -2,11 +2,11 @@ const REQUIRED_PACKED_FILES = [
   '.nvmrc',
   '.claude-plugin/plugin.json',
   '.codex-plugin/plugin.json',
-  '.codex/agents/invoice-operator.toml',
-  '.cursor/rules/invompt-invoice.mdc',
-  'agents/invoice-operator.agent.md',
-  'commands/invoice.md',
-  'commands/invompt/invoice.toml',
+  '.codex/agents/invompt-local-beta-invoice-operator.toml',
+  '.cursor/rules/invompt-local-beta-invoice.mdc',
+  'agents/invompt-local-beta-invoice-operator.agent.md',
+  'commands/invompt-local-beta-invoice.md',
+  'commands/invompt-local-beta/invoice.toml',
   'dist/contracts.d.ts',
   'dist/contracts.js',
   'dist/error.d.ts',
@@ -33,11 +33,11 @@ const REQUIRED_PACKED_FILES = [
   'plugin.json',
   'qwen-extension.json',
   'runtime-support.json',
-  'skills/invompt-invoice/SKILL.md',
-  'skills/invompt-onboarding/SKILL.md',
-  'skills/invompt-onboarding/agents/openai.yaml',
-  '.agents/skills/invompt-onboarding/SKILL.md',
-  '.agents/skills/invompt-onboarding/agents/openai.yaml',
+  'skills/invompt-local-beta-invoice/SKILL.md',
+  'skills/invompt-local-beta-onboarding/SKILL.md',
+  'skills/invompt-local-beta-onboarding/agents/openai.yaml',
+  '.agents/skills/invompt-local-beta-onboarding/SKILL.md',
+  '.agents/skills/invompt-local-beta-onboarding/agents/openai.yaml',
   'THIRD_PARTY_NOTICES.md',
 ]
 
@@ -92,6 +92,17 @@ const OPERATIONAL_TOOL_SOURCES = Object.freeze([
 ])
 
 const RETIRED_PACKED_ASSETS = ['.mcp.json', '.cursor/mcp.json', 'server.json']
+const RETIRED_DISCOVERY_PATHS = [
+  '.agents/skills/invompt-invoice/',
+  '.agents/skills/invompt-onboarding/',
+  '.codex/agents/invoice-operator.toml',
+  '.cursor/rules/invompt-invoice.mdc',
+  'agents/invoice-operator.agent.md',
+  'commands/invoice.md',
+  'commands/invompt/',
+  'skills/invompt-invoice/',
+  'skills/invompt-onboarding/',
+]
 
 export function verifyPackContract({
   packageJson,
@@ -159,6 +170,12 @@ export function verifyPackContract({
   const packedPaths = new Set(pack.files.map(({ path }) => path))
   for (const path of REQUIRED_PACKED_FILES) assert(packedPaths.has(path), `packed package includes ${path}`)
   for (const path of RETIRED_PACKED_ASSETS) assert(!packedPaths.has(path), `packed package excludes ${path}`)
+  for (const path of RETIRED_DISCOVERY_PATHS) {
+    assert(
+      ![...packedPaths].some((packedPath) => packedPath === path || packedPath.startsWith(path)),
+      `packed package excludes retired discovery path ${path}`,
+    )
+  }
   assert(![...packedPaths].some((path) => path.startsWith('plugin/')), 'packed package excludes the legacy nested plugin tree')
   assert(!packedPaths.has('dist/client.js'), 'packed package excludes the retired REST client')
   assert(!packedPaths.has('dist/http.js'), 'packed package excludes public HTTP server ownership')
@@ -173,6 +190,12 @@ export function verifyPackContract({
 
   const runtimeSupport = JSON.parse(readText('runtime-support.json'))
   assert(runtimeSupport.schemaVersion === 2, 'runtime support schema is current')
+  assert(runtimeSupport.pluginIdentity === 'invompt-local-beta', 'runtime support records the isolated beta plugin identity')
+  assert(
+    JSON.stringify(runtimeSupport.skillIdentities) ===
+      JSON.stringify(['invompt-local-beta-invoice', 'invompt-local-beta-onboarding']),
+    'runtime support records only isolated beta skill identities',
+  )
   assert(
     runtimeSupport.endpoints?.hostedMcp === 'https://mcp.invompt.com/mcp' &&
       runtimeSupport.endpoints?.webCredentialLifecycle === 'https://invompt.com' &&
@@ -294,20 +317,25 @@ export function verifyPackContract({
       !createAccountClaimLinkSource.includes('replayed'),
     'create_account_claim_link is operational, input-free, and annotated as a closed non-idempotent mutation',
   )
-  const skillSource = readText('skills/invompt-invoice/SKILL.md')
-  const skillMirror = readText('.agents/skills/invompt-invoice/SKILL.md')
-  const onboardingSkill = readText('skills/invompt-onboarding/SKILL.md')
-  const onboardingMirror = readText('.agents/skills/invompt-onboarding/SKILL.md')
-  const onboardingMetadata = readText('skills/invompt-onboarding/agents/openai.yaml')
-  const onboardingMetadataMirror = readText('.agents/skills/invompt-onboarding/agents/openai.yaml')
-  const surfaceSource = readText('skills/invompt-invoice/references/mcp-surface.md')
-  const surfaceMirror = readText('.agents/skills/invompt-invoice/references/mcp-surface.md')
+  const skillSource = readText('skills/invompt-local-beta-invoice/SKILL.md')
+  const skillMirror = readText('.agents/skills/invompt-local-beta-invoice/SKILL.md')
+  const onboardingSkill = readText('skills/invompt-local-beta-onboarding/SKILL.md')
+  const onboardingMirror = readText('.agents/skills/invompt-local-beta-onboarding/SKILL.md')
+  const onboardingMetadata = readText('skills/invompt-local-beta-onboarding/agents/openai.yaml')
+  const onboardingMetadataMirror = readText('.agents/skills/invompt-local-beta-onboarding/agents/openai.yaml')
+  const surfaceSource = readText('skills/invompt-local-beta-invoice/references/mcp-surface.md')
+  const surfaceMirror = readText('.agents/skills/invompt-local-beta-invoice/references/mcp-surface.md')
   assert(skillSource === skillMirror, 'packaged skill and generated agent mirror are byte-identical')
   assert(surfaceSource === surfaceMirror, 'packaged MCP reference and generated agent mirror are byte-identical')
   assert(onboardingSkill === onboardingMirror, 'packaged onboarding skill and generated agent mirror are byte-identical')
   assert(onboardingMetadata === onboardingMetadataMirror, 'packaged onboarding skill metadata and mirror are byte-identical')
+  assert(/^name: invompt-local-beta-invoice$/m.test(skillSource), 'invoice skill owns only its beta discovery identity')
   assert(
-    skillSource.includes('Before any MCP call, load `invompt-onboarding`') &&
+    /^name: invompt-local-beta-onboarding$/m.test(onboardingSkill),
+    'onboarding skill owns only its beta discovery identity',
+  )
+  assert(
+    skillSource.includes('Before any MCP call, load `invompt-local-beta-onboarding`') &&
       skillSource.includes('Do not call `invompt-local-beta` until onboarding confirms an active binding'),
     'invoice skill routes through onboarding before MCP calls',
   )
@@ -343,8 +371,8 @@ export function verifyPackContract({
     )
   }
   for (const [path, contents] of [
-    ['skills/invompt-invoice/SKILL.md', skillSource],
-    ['skills/invompt-invoice/references/mcp-surface.md', surfaceSource],
+    ['skills/invompt-local-beta-invoice/SKILL.md', skillSource],
+    ['skills/invompt-local-beta-invoice/references/mcp-surface.md', surfaceSource],
   ]) {
     assert(
       contents.includes('exactly 16 operational tools') &&
@@ -354,9 +382,16 @@ export function verifyPackContract({
     )
   }
 
-  const hostManifestPaths = ['.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'gemini-extension.json', 'qwen-extension.json']
+  const hostManifestPaths = [
+    '.claude-plugin/plugin.json',
+    '.codex-plugin/plugin.json',
+    'plugin.json',
+    'gemini-extension.json',
+    'qwen-extension.json',
+  ]
   for (const path of hostManifestPaths) {
     const manifest = JSON.parse(readText(path))
+    assert(manifest.name === 'invompt-local-beta', `${path} uses the isolated beta plugin identity`)
     assert(!Object.hasOwn(manifest, 'mcpServers'), `${path} declares no static MCP transport`)
     const serialized = JSON.stringify(manifest)
     for (const term of ['INVOMPT_GUEST_CREDENTIAL', 'X-Invompt-Guest-Credential', 'guest credential']) {

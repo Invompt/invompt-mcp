@@ -4,7 +4,7 @@ alwaysApply: false
 ---
 
 For invoice-document requests, follow the canonical workflow in
-`skills/invompt-invoice/SKILL.md` and use the MCP server named exactly `invompt`.
+`skills/invompt-local-beta-invoice/SKILL.md` and use the MCP server named exactly `invompt-local-beta`.
 
 Match semantic intent in the user's language. Do not require a magic command, do not invent
 financial or legal facts, and return the hosted Invompt URL after creation.

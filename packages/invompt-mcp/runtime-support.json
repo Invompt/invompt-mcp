@@ -1,5 +1,7 @@
 {
   "schemaVersion": 2,
+  "pluginIdentity": "invompt-local-beta",
+  "skillIdentities": ["invompt-local-beta-invoice", "invompt-local-beta-onboarding"],
   "releaseChannel": {
     "status": "local-beta-pre-1.0",
     "next": "development-only",

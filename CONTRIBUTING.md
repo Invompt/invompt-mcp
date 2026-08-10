@@ -9,6 +9,7 @@ Thanks for helping improve this public-development, pre-1.0 project.
 3. Keep `@invompt/mcp-core` and `@invompt/mcp-testkit` private workspace packages; only `invompt-mcp` is publishable.
 4. Use Node 22.22.0 and npm 11.11.0, then run `npm ci` and `npm run check`.
 5. Keep this CLI/local-beta lane on `invompt-local-beta`. Never target, remove, log out, or modify the Workspace Hub global `invompt` consumer; it remains hosted OAuth-only.
+6. Keep plugin, skill, agent, command, and template discovery names under `invompt-local-beta`; never package a global consumer discovery identity.
 
 ## Documentation and testing
 

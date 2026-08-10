@@ -1,7 +1,7 @@
 # Invompt MCP Surface
 
 Use the tool schemas exposed by the connected server as the final authority. The connected
-Invompt MCP service exposes these surfaces after `invompt-onboarding` confirms the selected Guest
+Invompt MCP service exposes these surfaces after `invompt-local-beta-onboarding` confirms the selected Guest
 or OAuth connection.
 
 The surface has exactly 16 operational tools. Authentication is established by the selected Guest

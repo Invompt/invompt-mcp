@@ -1,0 +1,7 @@
+interface:
+  display_name: "Invompt Local Beta Onboarding"
+  short_description: "Choose Guest or OAuth before local Invompt MCP use"
+  default_prompt: "Use $invompt-local-beta-onboarding to check my local Invompt connection before invoice work."
+
+policy:
+  allow_implicit_invocation: true
