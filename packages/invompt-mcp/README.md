@@ -10,7 +10,7 @@
 `invompt-mcp` is a self-contained stdio bridge between an MCP client and a configured Invompt MCP
 service. It forwards MCP JSON-RPC messages without moving invoice business logic into the client.
 
-> **Prerelease:** this public-development, pre-1.0 source declares version `0.10.2` for the
+> **Prerelease:** this public-development, pre-1.0 source declares version `0.10.3` for the
 > `next` channel. Verify live registry state before relying on it. Operational Phase 1 is
 > supported only through maintained private adapter configuration and direct transport.
 

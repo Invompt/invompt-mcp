@@ -11,7 +11,7 @@ Invompt MCP is a pre-1.0 TypeScript workspace for the public `invompt-mcp` stdio
 transport-neutral contract. The bridge connects an MCP client to a configured Invompt MCP service
 without moving invoice business logic into the client package.
 
-> **Prerelease:** this source declares `invompt-mcp@0.10.2` for the `next` channel. Verify the
+> **Prerelease:** this source declares `invompt-mcp@0.10.3` for the `next` channel. Verify the
 > live registry before relying on that version. The artifact is for distribution and audit; it is
 > not a public install/run promise.
 

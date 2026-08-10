@@ -1,7 +1,7 @@
 {
   "name": "invompt-mcp",
   "mcpName": "com.invompt/invompt-mcp",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "Self-contained stdio bridge for the loopback Invompt MCP transport",
   "type": "module",
   "bin": { "invompt-mcp": "./dist/index.js" },
