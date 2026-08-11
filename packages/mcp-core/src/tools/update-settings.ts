@@ -48,9 +48,9 @@ export function registerUpdateSettingsTool(server: McpServer, client: InvomptSer
       },
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     async (input) => {

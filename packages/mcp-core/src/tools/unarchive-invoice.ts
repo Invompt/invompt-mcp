@@ -29,7 +29,7 @@ export function registerUnarchiveInvoiceTool(server: McpServer, client: InvomptS
         readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: true,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     async ({ id, expectedVersion, idempotencyKey }) => {

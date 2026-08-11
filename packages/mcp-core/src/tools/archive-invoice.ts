@@ -27,9 +27,9 @@ export function registerArchiveInvoiceTool(server: McpServer, client: InvomptSer
       },
       annotations: {
         readOnlyHint: false,
-        destructiveHint: true,
+        destructiveHint: false,
         idempotentHint: true,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     async ({ id, expectedVersion, idempotencyKey }) => {

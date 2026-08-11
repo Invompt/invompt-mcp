@@ -28,7 +28,7 @@ export function registerCreateClientTool(server: McpServer, client: InvomptServi
         duplicateCandidates: z.array(clientSummarySchema),
         requiresDuplicateConfirmation: z.boolean(),
       },
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async (input) => {
       try {

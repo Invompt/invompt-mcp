@@ -40,7 +40,7 @@ export function registerGetInvoiceTool(server: McpServer, client: InvomptService
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: true,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     async ({ id }) => {

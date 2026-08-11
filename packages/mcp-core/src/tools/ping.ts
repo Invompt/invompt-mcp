@@ -32,7 +32,7 @@ export function registerPingTool(server: McpServer, client: InvomptService): voi
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: true,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     async () => {

@@ -24,7 +24,7 @@ export function registerListClientsTool(server: McpServer, client: InvomptServic
         hasMore: z.boolean(),
         resolution: resolutionSchema,
       },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async (input) => {
       try {

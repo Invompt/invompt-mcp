@@ -33,7 +33,7 @@ export function registerGetSettingsTool(server: McpServer, client: InvomptServic
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: true,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     async () => {

@@ -28,7 +28,7 @@ export function registerUpdateClientTool(server: McpServer, client: InvomptServi
         idempotencyKey: idempotencyKeySchema,
       },
       outputSchema: { client: savedClientSchema, replayed: z.boolean().optional() },
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ id, ...input }) => {
       try {
