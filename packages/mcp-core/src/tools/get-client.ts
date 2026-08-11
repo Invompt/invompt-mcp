@@ -12,7 +12,7 @@ export function registerGetClientTool(server: McpServer, client: InvomptService)
         'Get the canonical structured billing-party fields for one company-owned saved client. Private notes and Web-specific rich HTML are never exposed.',
       inputSchema: { id: clientIdSchema },
       outputSchema: { client: savedClientSchema },
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ id }) => {
       try {

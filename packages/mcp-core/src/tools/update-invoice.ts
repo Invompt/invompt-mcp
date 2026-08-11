@@ -52,7 +52,7 @@ export function registerUpdateInvoiceTool(server: McpServer, client: InvomptServ
       },
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: true,
       },

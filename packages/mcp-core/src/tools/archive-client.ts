@@ -24,7 +24,7 @@ export function registerArchiveClientTool(server: McpServer, client: InvomptServ
         archivedAt: z.string(),
         replayed: z.boolean().optional(),
       },
-      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ id, ...input }) => {
       try {

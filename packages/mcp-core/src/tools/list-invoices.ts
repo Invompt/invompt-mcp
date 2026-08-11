@@ -44,7 +44,7 @@ export function registerListInvoicesTool(server: McpServer, client: InvomptServi
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: true,
-        openWorldHint: true,
+        openWorldHint: false,
       },
     },
     async ({ page, limit, search, status }) => {

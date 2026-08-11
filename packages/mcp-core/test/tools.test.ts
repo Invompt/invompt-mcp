@@ -1095,7 +1095,7 @@ describe('unarchive_invoice tool', () => {
           readOnlyHint: false,
           destructiveHint: false,
           idempotentHint: true,
-          openWorldHint: true,
+          openWorldHint: false,
         }),
       }),
     )
