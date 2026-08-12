@@ -47,6 +47,8 @@ Guest credentials use macOS Keychain first: service `com.invompt.invompt-mcp`, a
 
 Guest to OAuth switching leaves the Guest credential dormant. It never auto-converts or claims a Guest workspace. `logout --host codex` or `logout --host claude-code` removes the selected host configuration. `reset --yes` removes local state and attempts online Guest revocation; an offline revocation failure means copied credentials may remain valid and is reported as a warning.
 
+Transport mode is separate from account type: hosted OAuth Guest and legacy credential Guest are both Guest principals. An explicit account-claim request calls the claim tool once; the backend decides eligibility. After an OAuth Guest claim, the OAuth grant remains connected and subsequent operations revalidate registered state. After a legacy Guest claim, the old credential fails with `GUEST_ACCOUNT_CLAIMED`.
+
 ## Migration and rollback
 
 `0.11.0` adds explicit local-beta onboarding without migrating the Workspace Hub global OAuth consumer. Choose one local-beta mode. `--allow-file-fallback` is accepted only for Guest setup; unknown and duplicate flags fail closed. Roll back local-beta state with `logout --host …`, then use `reset --yes` only when removing local state and attempting Guest revocation. Restore the global consumer through its OAuth-only installer, not this package.

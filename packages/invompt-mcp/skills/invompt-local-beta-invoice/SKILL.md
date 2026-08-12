@@ -46,8 +46,8 @@ Guest state, and preserve Guest as dormant when OAuth is selected. ChatGPT web i
 and never uses local Guest setup or local device state.
 
 The surface has exactly 16 operational tools. Invoice, settings, and client tools use the selected
-Guest or registered OAuth connection. `create_account_claim_link` is the one Guest-only tool: call
-it once only when the user explicitly asks to claim the active Guest workspace. Present its
+Guest or registered OAuth connection. `create_account_claim_link` is the one Guest-account-only tool:
+transport mode does not determine account type. Call it once only when the user explicitly asks to claim the active Guest workspace; the backend decides eligibility. Present its
 `claimUrl` exactly once, state that it expires, and never log or repeat the URL. After browser
 success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_CLAIMED`.
 

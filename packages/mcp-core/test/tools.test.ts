@@ -1030,7 +1030,9 @@ describe('create_account_claim_link tool', () => {
       expect(config.outputSchema.claimUrl?.safeParse(url).success).toBe(false)
     }
     expect(config.outputSchema.expiresAt?.safeParse(claimResult.expiresAt).success).toBe(true)
-    expect(config.description).toContain('Guest-only')
+    expect(config.description).toContain('Guest-account-only')
+    expect(config.description).toContain('transport-neutral')
+    expect(config.description).toContain('backend decides')
     expect(config.description).toContain('presented once')
     expect(config.annotations).toEqual(
       expect.objectContaining({
@@ -1053,9 +1055,32 @@ describe('create_account_claim_link tool', () => {
     expect(createAccountClaimLink).toHaveBeenCalledWith()
   })
 
-  test('fails closed for OAuth without calling the claim service', async () => {
+  test('allows a hosted OAuth Guest transport and calls the claim service once', async () => {
     const { server } = makeServerMock()
-    const createAccountClaimLink = vi.fn()
+    const claimResult = {
+      claimUrl: 'https://invompt.com/claim/oauth-guest',
+      expiresAt: '2026-08-10T12:00:00.000Z',
+    }
+    const createAccountClaimLink = vi.fn().mockResolvedValue(claimResult)
+    const client = {
+      isGuest: () => false,
+      createAccountClaimLink,
+    } as unknown as Parameters<typeof registerCreateAccountClaimLinkTool>[1]
+    registerCreateAccountClaimLinkTool(server, client)
+
+    const handler = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as ToolHandler
+    const result = (await handler({})) as { content: Array<{ text: string }>; structuredContent: typeof claimResult }
+
+    expect(result.structuredContent).toEqual(claimResult)
+    expect(result.content[0]?.text).not.toContain(claimResult.claimUrl)
+    expect(createAccountClaimLink).toHaveBeenCalledOnce()
+  })
+
+  test('formats a registered-account backend denial after calling the service once', async () => {
+    const { server } = makeServerMock()
+    const createAccountClaimLink = vi.fn().mockRejectedValue(
+      new InvomptApiError('Account claim links are available only for Guest accounts.', 'ACCOUNT_CLAIM_REGISTERED', 403),
+    )
     const client = {
       isGuest: () => false,
       createAccountClaimLink,
@@ -1066,10 +1091,10 @@ describe('create_account_claim_link tool', () => {
     const result = (await handler({})) as { content: Array<{ text: string }>; isError?: boolean }
 
     expect(parseToolErrorText(result).error).toEqual({
-      code: 'ACCOUNT_CLAIM_OAUTH_FORBIDDEN',
-      message: 'Account claim links are available only for active Guest workspaces.',
+      code: 'ACCOUNT_CLAIM_REGISTERED',
+      message: 'Account claim links are available only for Guest accounts.',
     })
-    expect(createAccountClaimLink).not.toHaveBeenCalled()
+    expect(createAccountClaimLink).toHaveBeenCalledOnce()
   })
 })
 
