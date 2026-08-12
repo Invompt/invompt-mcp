@@ -59,8 +59,9 @@ Keychain error. Never place a Guest credential in a manifest, environment variab
 host configuration.
 
 Switching from Guest to OAuth leaves the Guest credential dormant; it is not sent through OAuth.
-OAuth setup uses native HTTPS and browser login. Claiming a Guest workspace is a separate,
-explicit, Guest-only browser-link flow.
+OAuth setup uses native HTTPS and browser login. Transport mode is separate from account type:
+hosted OAuth Guest and legacy credential Guest are both Guest principals. Claiming a Guest
+workspace is an explicit browser-link flow; the backend decides eligibility.
 
 ## 5. Handle expected failures safely
 
@@ -85,9 +86,9 @@ schemas. The package exposes exactly 16 operational tools.
 ## 7. Claim an active Guest workspace only when asked
 
 When the user explicitly asks to move the active Guest workspace into an authenticated account,
-call `create_account_claim_link` once while still connected as Guest. The tool takes no input; do
+call `create_account_claim_link` once regardless of transport. The tool takes no input; do
 not ask for or send credentials, account IDs, claim IDs, nonces, or OAuth data. Present the returned
 `claimUrl` exactly once, explain that it expires at `expiresAt`, and never log, repeat, or retain the
-URL. The user completes sign-in and confirmation in the browser. Do not call this tool through
-OAuth. After a successful claim, the former Guest credential returns `GUEST_ACCOUNT_CLAIMED`;
+URL. The user completes sign-in and confirmation in the browser. Call it once regardless of
+transport; the backend decides whether the current account may claim the workspace. After a successful claim, the former Guest credential returns `GUEST_ACCOUNT_CLAIMED`;
 stop using it and reconcile local onboarding state instead of retrying.
