@@ -4,7 +4,11 @@ import { z } from 'zod'
 
 import { InvomptApiError } from '../src/error.js'
 import { registerArchiveInvoiceTool } from '../src/tools/archive-invoice.js'
-import { CANONICAL_INVOML_MAX_BYTES, canonicalInvomlSchema } from '../src/tools/client-schemas.js'
+import {
+  CANONICAL_INVOML_MAX_BYTES,
+  canonicalInvomlSchema,
+  structuredInvomlSchema,
+} from '../src/tools/client-schemas.js'
 import { registerCreateClientTool } from '../src/tools/create-client.js'
 import { registerCreateAccountClaimLinkTool } from '../src/tools/create-account-claim-link.js'
 import { registerCreateInvoiceTool } from '../src/tools/create-invoice.js'
@@ -62,6 +66,25 @@ const VALID_INVOML = JSON.stringify({
   meta: { documentType: 'invoice', number: 'EXAMPLE-MCP-0007', issueDate: '2030-01-15', currency: 'SGD' },
   items: [{ description: 'Synthetic service sample', quantity: 1, unitPrice: 318.75 }],
 })
+const VALID_STRUCTURED_DOCUMENT = {
+  $invoml: '1.0' as const,
+  meta: {
+    documentType: 'invoice' as const,
+    number: 'CHATGPT-LIKE-0001',
+    issueDate: '2030-01-15',
+    dueDate: '2030-02-15',
+    expiryDate: '2030-03-15',
+    reference: 'PO-42',
+    currency: 'usd',
+    locale: 'en-US',
+  },
+  to: {
+    name: 'Northstar Example Studio',
+    address: { lines: ['42 Example Road', 'Bangkok 10110'] },
+    countryCode: 'th',
+  },
+  items: [{ description: 'Structured sample', quantity: 2, unitPrice: 25.5 }],
+}
 const IDEMPOTENCY_KEY = 'invoice-test-key'
 
 const invoiceResult = {
@@ -244,6 +267,19 @@ describe('create_invoice tool', () => {
     expect((server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toBe('create_invoice')
   })
 
+  test('describes the structured document path and its forbidden confusions', () => {
+    const { server } = makeServerMock()
+    const client = { createInvoice: vi.fn() } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+      description: string
+    }
+    expect(config.description).toContain('exactly one: document')
+    expect(config.description).toContain('address:{lines:[...]}')
+    expect(config.description).toContain('item.taxRate')
+    expect(config.description).toContain('taxCategory')
+  })
+
   test('calls client.createInvoice and returns structured content', async () => {
     const { server, getHandler } = makeServerMock()
     const client = {
@@ -267,6 +303,48 @@ describe('create_invoice tool', () => {
       idempotencyKey: IDEMPOTENCY_KEY,
     })
     expect(client.getInvoice).toHaveBeenCalledWith(invoiceResult.invoiceId)
+  })
+
+  test('normalizes a ChatGPT-like structured document deterministically', async () => {
+    const { server, getHandler } = makeServerMock()
+    const client = {
+      createInvoice: vi.fn().mockResolvedValue({ ...invoiceResult, invoiceNumber: 'CHATGPT-LIKE-0001' }),
+      getInvoice: vi.fn().mockResolvedValue({
+        invoice: { ...invoiceReadBack.invoice, invoiceNumber: 'CHATGPT-LIKE-0001' },
+      }),
+    } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+
+    await getHandler('create_invoice')({ document: VALID_STRUCTURED_DOCUMENT, idempotencyKey: IDEMPOTENCY_KEY })
+
+    expect(client.createInvoice).toHaveBeenCalledWith({
+      invoml:
+        '{"$invoml":"1.0","meta":{"documentType":"invoice","number":"CHATGPT-LIKE-0001","issueDate":"2030-01-15","dueDate":"2030-02-15","expiryDate":"2030-03-15","reference":"PO-42","currency":"USD","locale":"en-US"},"to":{"name":"Northstar Example Studio","address":{"lines":["42 Example Road","Bangkok 10110"]},"countryCode":"TH"},"items":[{"description":"Structured sample","quantity":2,"unitPrice":25.5}]}',
+      templateId: undefined,
+      clientId: undefined,
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })
+  })
+
+  test.each([
+    ['neither input', {}],
+    ['both input forms', { invoml: VALID_INVOML, document: VALID_STRUCTURED_DOCUMENT }],
+  ])('rejects %s without calling the API client', async (_label, input) => {
+    const { server, getHandler } = makeServerMock()
+    const createInvoice = vi.fn().mockResolvedValue(invoiceResult)
+    const client = { createInvoice } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+
+    const result = (await getHandler('create_invoice')({ ...input, idempotencyKey: IDEMPOTENCY_KEY })) as {
+      isError: boolean
+      content: Array<{ text: string }>
+    }
+
+    expect(parseToolErrorText(result).error).toEqual({
+      code: 'INVALID_INVOML_INPUT',
+      message: expect.stringContaining('exactly one'),
+    })
+    expect(createInvoice).not.toHaveBeenCalled()
   })
 
   test('fails closed when the server rewrites the authored invoice number', async () => {
@@ -370,6 +448,30 @@ describe('create_invoice tool', () => {
 
     expect(parseToolErrorText(result).error.message).toBe('meta.currency: Currency is required.')
     expect(createInvoice).toHaveBeenCalledOnce()
+  })
+})
+
+describe('structured InvoML schema', () => {
+  test('accepts supported document types and minimal line-item fields', () => {
+    for (const documentType of ['invoice', 'quote', 'estimate', 'receipt', 'credit_note'] as const) {
+      expect(structuredInvomlSchema.safeParse({ ...VALID_STRUCTURED_DOCUMENT, meta: { ...VALID_STRUCTURED_DOCUMENT.meta, documentType } }).success).toBe(true)
+    }
+  })
+
+  test.each([
+    ['item.taxRate', { items: [{ description: 'Bad', quantity: 1, unitPrice: 10, taxRate: 0.2 }] }],
+    ['string address', { to: { content: { name: 'Bad', address: 'one line' } } }],
+    ['mixed party forms', { to: { content: { name: 'Bad', content: 'also freeform' } } }],
+    ['unsupported taxCategory', { meta: { taxCategory: 'standard' } }],
+  ])('rejects %s instead of passing an ambiguous payload downstream', (_label, invalid) => {
+    const candidate = {
+      ...VALID_STRUCTURED_DOCUMENT,
+      ...invalid,
+      meta: { ...VALID_STRUCTURED_DOCUMENT.meta, ...('meta' in invalid ? invalid.meta : {}) },
+      items: 'items' in invalid ? invalid.items : VALID_STRUCTURED_DOCUMENT.items,
+      to: 'to' in invalid ? invalid.to : VALID_STRUCTURED_DOCUMENT.to,
+    }
+    expect(structuredInvomlSchema.safeParse(candidate).success).toBe(false)
   })
 })
 

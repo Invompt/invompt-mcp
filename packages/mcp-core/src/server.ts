@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
-import { GUEST_MCP_INSTRUCTIONS } from './contracts.js'
+import { GUEST_MCP_INSTRUCTIONS, STRUCTURED_INVOML_GUIDANCE } from './contracts.js'
 import { registerDraftInvoicePrompt } from './prompts/draft-invoice.js'
 import { registerGettingStartedResource } from './resources/getting-started.js'
 import { registerInvomlSpecResource } from './resources/invoml-spec.js'
@@ -52,7 +52,7 @@ export function createMcpServer(service: InvomptService, version: string): McpSe
   const server = new McpServer(
     { name: MCP_SERVER_NAME, version },
     {
-      instructions: `Invompt creates and manages hosted invoices. For a named recipient, call list_clients before create_invoice. Auto-select only one exact_unique match. For ambiguous matches, ask which saved client to use. For no match, ask one consolidated question: save and assign the client, or use the recipient only on this invoice. Never create a saved client silently as a side effect of create_invoice. Recipient identity is optional. A supplied clientId builds the invoice recipient snapshot without copying private notes. ${GUEST_MCP_INSTRUCTIONS}`,
+      instructions: `${STRUCTURED_INVOML_GUIDANCE} For named recipients, call list_clients before create_invoice; never silently save a client. Every create requires a stable idempotencyKey. ${GUEST_MCP_INSTRUCTIONS}`,
     },
   )
   registerMcpSurface(server, service)
