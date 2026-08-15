@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { GETTING_STARTED_URI, registerGettingStartedResource } from '../src/resources/getting-started.js'
 import { INVOML_SPEC_URI, registerInvomlSpecResource } from '../src/resources/invoml-spec.js'
+import { STRUCTURED_INVOML_GUIDANCE } from '../src/contracts.js'
 
 type ResourceHandler = (uri: URL) => Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }>
 
@@ -92,6 +93,7 @@ describe('getting-started resource', () => {
     expect(text).toContain('Never invent issuer identity')
     expect(text).toContain("user's language")
     expect(text).toContain('Never invent currency')
+    expect(text).toContain(STRUCTURED_INVOML_GUIDANCE)
     expect(text).toContain('update_settings')
     expect(text).toContain('idempotencyKey')
     expect(text).toContain('expectedVersion')

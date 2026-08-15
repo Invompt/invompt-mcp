@@ -1,5 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
+import { STRUCTURED_INVOML_GUIDANCE } from '../contracts.js'
+
 export const GETTING_STARTED_URI = 'invompt://docs/getting-started'
 
 const GETTING_STARTED_CONTENT = `Invompt — AI Invoice Generator
@@ -39,6 +41,11 @@ access to the invoicing workflow.
    clientId assigns a saved client and snapshots
    its billing fields; private notes are never copied. Every create requires a
    stable 8–128 character idempotencyKey; reuse it only for an identical retry.
+   ${STRUCTURED_INVOML_GUIDANCE}
+   The structured document path is intentionally minimal and strict: use one
+   party form per party (freeform { content: string } or a direct structured
+   party object), use address { lines: [...] }, and omit unknown fields rather
+   than guessing. Advanced tax fields belong in legacy serialized invoml.
 
 6. Browse invoices (list_invoices, get_invoice) — search existing invoices,
    read their InvoML content and current version, use them as templates for new
