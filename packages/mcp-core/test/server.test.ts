@@ -39,7 +39,7 @@ describe('server instructions', () => {
     expect(instructions.slice(0, 512)).toContain('idempotencyKey')
   })
 
-  test('publishes mutually exclusive structured and legacy create branches in JSON Schema', () => {
+  test('publishes structured and legacy create fields in the root JSON Schema', () => {
     const server = createMcpServer(serviceFake(), 'test')
     const inputSchema = (server as unknown as {
       _registeredTools: Record<string, { inputSchema: z.ZodType }>
@@ -47,12 +47,13 @@ describe('server instructions', () => {
     expect(inputSchema).toBeDefined()
 
     const jsonSchema = z.toJSONSchema(inputSchema)
-    expect(jsonSchema.anyOf).toHaveLength(2)
-    expect(jsonSchema.anyOf).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ required: expect.arrayContaining(['invoml', 'idempotencyKey']) }),
-        expect.objectContaining({ required: expect.arrayContaining(['document', 'idempotencyKey']) }),
-      ]),
+    expect(jsonSchema.type).toBe('object')
+    expect(jsonSchema.required).toContain('idempotencyKey')
+    expect(jsonSchema.properties).toEqual(
+      expect.objectContaining({
+        invoml: expect.objectContaining({ type: 'string' }),
+        document: expect.objectContaining({ type: 'object' }),
+      }),
     )
     expect(JSON.stringify(jsonSchema)).toContain('additionalProperties')
   })
