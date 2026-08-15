@@ -28,15 +28,6 @@ const createInvoiceInputSchema = z
     document: structuredInvomlSchema.optional(),
     ...sharedCreateInvoiceInputShape,
   })
-  .superRefine((input, context) => {
-    if ((input.document === undefined) === (input.invoml === undefined)) {
-      context.addIssue({
-        code: 'custom',
-        message: 'Provide exactly one of document or invoml.',
-        path: ['document'],
-      })
-    }
-  })
   .describe(
     'Provide exactly one input form: document as a structured InvoML object, or invoml as legacy serialized JSON.',
   )
