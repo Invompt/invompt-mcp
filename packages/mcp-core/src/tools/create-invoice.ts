@@ -13,28 +13,29 @@ import {
 } from './client-schemas.js'
 import { formatToolError } from './format-error.js'
 
+const sharedCreateInvoiceInputShape = {
+  templateId: z.enum(TEMPLATE_IDS).optional().describe('Optional template override.'),
+  clientId: z
+    .uuid()
+    .optional()
+    .describe('Company-owned saved client to assign and snapshot. Search with list_clients first.'),
+  idempotencyKey: idempotencyKeySchema,
+}
+
 const createInvoiceInputSchema = z
-  .strictObject({
-    invoml: canonicalInvomlSchema.optional(),
-    document: structuredInvomlSchema.optional(),
-    templateId: z.enum(TEMPLATE_IDS).optional().describe('Optional template override.'),
-    clientId: z
-      .uuid()
-      .optional()
-      .describe('Company-owned saved client to assign and snapshot. Search with list_clients first.'),
-    idempotencyKey: idempotencyKeySchema,
-  })
-  .superRefine((input, context) => {
-    const hasLegacy = input.invoml !== undefined
-    const hasStructured = input.document !== undefined
-    if (hasLegacy === hasStructured) {
-      context.addIssue({
-        code: 'custom',
-        path: ['document'],
-        message: 'Provide exactly one of document (structured InvoML object) or invoml (legacy JSON string).',
-      })
-    }
-  })
+  .union([
+    z.strictObject({
+      invoml: canonicalInvomlSchema,
+      ...sharedCreateInvoiceInputShape,
+    }),
+    z.strictObject({
+      document: structuredInvomlSchema,
+      ...sharedCreateInvoiceInputShape,
+    }),
+  ])
+  .describe(
+    'Provide exactly one input form: document as a structured InvoML object, or invoml as legacy serialized JSON.',
+  )
 
 const createInvoiceOutputSchema = {
   invoiceId: z.string(),
@@ -95,7 +96,7 @@ function normalizeStructuredDocument(document: unknown): string {
       ...(value.meta.dueDate === undefined ? {} : { dueDate: value.meta.dueDate }),
       ...(value.meta.expiryDate === undefined ? {} : { expiryDate: value.meta.expiryDate }),
       ...(value.meta.reference === undefined ? {} : { reference: value.meta.reference }),
-      currency: value.meta.currency,
+      currency: value.meta.currency.toUpperCase(),
       ...(value.meta.locale === undefined ? {} : { locale: value.meta.locale }),
     },
     ...(value.from === undefined ? {} : { from: normalizeParty(value.from) }),
@@ -136,7 +137,7 @@ function normalizeParty(party: {
     ...(party.businessNumber === undefined ? {} : { businessNumber: party.businessNumber }),
     ...(party.phone === undefined ? {} : { phone: party.phone }),
     ...(party.website === undefined ? {} : { website: party.website }),
-    ...(party.countryCode === undefined ? {} : { countryCode: party.countryCode }),
+    ...(party.countryCode === undefined ? {} : { countryCode: party.countryCode.toUpperCase() }),
   }
 }
 
@@ -183,7 +184,10 @@ export function registerCreateInvoiceTool(server: McpServer, client: InvomptServ
         openWorldHint: true,
       },
     },
-    async ({ invoml, document, templateId, clientId, idempotencyKey }) => {
+    async (input) => {
+      const { templateId, clientId, idempotencyKey } = input
+      const invoml = 'invoml' in input ? input.invoml : undefined
+      const document = 'document' in input ? input.document : undefined
       try {
         const serializedInvoml = resolveCreateInvoiceContent({ invoml, document })
         const authoredDocument = parseInvomlJsonObject(serializedInvoml)

@@ -33,7 +33,7 @@ const structuredPartyFieldsSchema = z
     businessNumber: structuredInvoMlString('Optional business registration number.', 100).optional(),
     phone: structuredInvoMlString('Optional phone number.', 100).optional(),
     website: z.string().trim().pipe(z.httpUrl().max(500)).optional(),
-    countryCode: z.string().trim().length(2).regex(/^[A-Za-z]{2}$/).transform((value) => value.toUpperCase()).optional(),
+    countryCode: z.string().trim().length(2).regex(/^[A-Za-z]{2}$/).optional(),
   })
   .describe('Structured party fields. Use address.lines for an address.')
 
@@ -66,7 +66,7 @@ const structuredInvoiceMetaSchema = z
     dueDate: z.iso.date().optional().describe('Optional payment due date in YYYY-MM-DD format.'),
     expiryDate: z.iso.date().optional().describe('Optional quote/estimate expiry date in YYYY-MM-DD format.'),
     reference: structuredInvoMlString('Optional customer or purchase reference.', 200).optional(),
-    currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/).describe('Three-letter ISO currency code.'),
+    currency: z.string().trim().regex(/^[A-Za-z]{3}$/).describe('Three-letter ISO currency code.'),
     locale: z.string().trim().min(2).max(35).optional().describe('Optional BCP 47 locale, such as en-US.'),
   })
   .describe('Required document metadata.')
