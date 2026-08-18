@@ -103,9 +103,11 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
 - Send the complete revised InvoML and preserve fields the user did not ask to change.
 - Send the latest invoice `version` as `expectedVersion` plus a stable 8–128 character
   `idempotencyKey` for update and archive. On version conflict, read again before retrying.
-- Treat an update as successful only when `update_invoice` returns the canonical number, status,
-  amount, currency, due date, `invoiceId`, version, and active capability-backed hosted preview `url` verified by authorized
-  `get_invoice` read-back. Never rely on a URL remembered by the host.
+- `update_invoice` commits the document mutation independently of capability lookup. Normally,
+  `linkState: active` returns the canonical facts and a capability-backed hosted preview `url`.
+  `linkState: unavailable` with `url: null` confirms the same mutation committed but no active
+  capability survived read-back; do not repeat the update. Use `renew_invoice_link` with a stable
+  idempotency key.
 - If `get_invoice` reports no active hosted link, use `renew_invoice_link` with a stable
   idempotency key. Renewal rotates only the 72-hour public capability and does not revise the
   invoice or require `expectedVersion`.

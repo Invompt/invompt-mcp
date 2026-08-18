@@ -7,19 +7,42 @@ import { canonicalInvomlSchema, expectedVersionSchema, idempotencyKeySchema } fr
 import { formatToolError } from './format-error.js'
 import { previewUrlSchema } from './preview-url-schema.js'
 
-const updateInvoiceOutputSchema = {
+const updateInvoiceOutputShape = {
   invoiceId: z.string(),
   invoiceNumber: z.string().min(1),
   status: z.string().min(1),
   total: z.number().nullable(),
   currency: z.string().min(3),
   dueDate: z.string().nullable(),
-  url: previewUrlSchema,
   version: z.number().int().min(1),
   replayed: z.boolean(),
   clientId: z.string().nullable().optional(),
   clientName: z.string().nullable().optional(),
 }
+
+const updateInvoiceOutputSchema = z
+  .object({
+    ...updateInvoiceOutputShape,
+    url: previewUrlSchema.nullable(),
+    linkState: z.enum(['active', 'unavailable']),
+  })
+  .superRefine((result, context) => {
+    if (result.linkState === 'active' && result.url === null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['url'],
+        message: 'An active invoice link requires a capability-backed preview URL.',
+      })
+    }
+
+    if (result.linkState === 'unavailable' && result.url !== null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['url'],
+        message: 'An unavailable invoice link must not return a preview URL.',
+      })
+    }
+  })
 
 export function registerUpdateInvoiceTool(server: McpServer, client: InvomptService): void {
   server.registerTool(
@@ -74,7 +97,10 @@ export function registerUpdateInvoiceTool(server: McpServer, client: InvomptServ
           content: [
             {
               type: 'text' as const,
-              text: `Updated invoice ${result.invoiceNumber} (${result.invoiceId}); status ${result.status}: ${result.url}`,
+              text:
+                result.linkState === 'active'
+                  ? `Updated invoice ${result.invoiceNumber} (${result.invoiceId}); status ${result.status}: ${result.url}`
+                  : `Updated invoice ${result.invoiceNumber} (${result.invoiceId}); status ${result.status}; no active hosted link. Use renew_invoice_link to issue a replacement.`,
             },
           ],
         }
