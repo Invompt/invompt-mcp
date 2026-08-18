@@ -1,6 +1,6 @@
 {
   "name": "invompt-local-beta",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Local-beta Invompt onboarding and invoice workflows. Select Guest or OAuth in the current conversation before configuring MCP.",
   "author": {
     "name": "Invompt",

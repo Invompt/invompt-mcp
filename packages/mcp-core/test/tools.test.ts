@@ -23,6 +23,11 @@ import { registerUpdateSettingsTool } from '../src/tools/update-settings.js'
 import { previewUrlSchema } from '../src/tools/preview-url-schema.js'
 
 type ToolHandler = (args: Record<string, unknown>) => Promise<unknown>
+type ToolOutputSchema = Record<string, z.ZodType> | z.ZodType
+
+function normalizeOutputSchema(schema: ToolOutputSchema): z.ZodType {
+  return ('safeParse' in schema ? schema : z.strictObject(schema)) as z.ZodType
+}
 
 function withGuestState<T extends Record<string, unknown>>(client: T, guest = false): T {
   return {
@@ -109,6 +114,7 @@ const updateInvoiceResult = {
   currency: 'SGD',
   dueDate: '2030-02-15',
   url: PREVIEW_URL,
+  linkState: 'active' as const,
   version: 2,
   replayed: false,
 }
@@ -219,9 +225,9 @@ describe('capability preview URL schema', () => {
       const { server } = makeServerMock()
       scenario.register(server)
       const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
-        outputSchema: Record<string, z.ZodType>
+        outputSchema: ToolOutputSchema
       }
-      const outputSchema = z.strictObject(config.outputSchema)
+      const outputSchema = normalizeOutputSchema(config.outputSchema)
       const discoverySchema = z.toJSONSchema(outputSchema)
 
       expect(outputSchema.safeParse(scenario.output(PREVIEW_URL)).success, scenario.name).toBe(true)
@@ -793,6 +799,56 @@ describe('update_invoice tool', () => {
       expectedVersion: 1,
       idempotencyKey: IDEMPOTENCY_KEY,
     })
+  })
+
+  test('returns an unavailable link state when an update commits without an active capability', async () => {
+    const { server, getHandler } = makeServerMock()
+    const unavailableResult = {
+      ...updateInvoiceResult,
+      url: null,
+      linkState: 'unavailable' as const,
+    }
+    const updateInvoice = vi.fn().mockResolvedValue(unavailableResult)
+    const client = withGuestState({ updateInvoice }) as unknown as Parameters<typeof registerUpdateInvoiceTool>[1]
+    registerUpdateInvoiceTool(server, client)
+    const result = (await getHandler('update_invoice')({
+      id: 'inv_1',
+      expectedVersion: 1,
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })) as {
+      structuredContent: unknown
+      content: Array<{ text: string }>
+      isError?: boolean
+    }
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+      outputSchema: ToolOutputSchema
+    }
+
+    expect(result.isError).toBeUndefined()
+    expect(result.structuredContent).toEqual(unavailableResult)
+    expect(normalizeOutputSchema(config.outputSchema).parse(unavailableResult)).toEqual(unavailableResult)
+    expect(result.content[0]?.text).toContain('no active hosted link')
+    expect(result.content[0]?.text).toContain('renew_invoice_link')
+  })
+
+  test.each([
+    ['active linkState with null URL', { ...updateInvoiceResult, url: null, linkState: 'active' }],
+    ['unavailable linkState with preview URL', { ...updateInvoiceResult, linkState: 'unavailable' }],
+    [
+      'missing linkState',
+      (() => {
+        const { linkState: _linkState, ...resultWithoutLinkState } = updateInvoiceResult
+        return resultWithoutLinkState
+      })(),
+    ],
+  ])('rejects %s from the update output schema', (_label, candidate) => {
+    const { server } = makeServerMock()
+    registerUpdateInvoiceTool(server, {} as Parameters<typeof registerUpdateInvoiceTool>[1])
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+      outputSchema: ToolOutputSchema
+    }
+
+    expect(normalizeOutputSchema(config.outputSchema).safeParse(candidate).success).toBe(false)
   })
 
   test('supports updating invoices in guest mode', async () => {

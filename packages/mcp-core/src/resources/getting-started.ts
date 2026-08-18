@@ -59,7 +59,10 @@ access to the invoicing workflow.
    updates preserve the canonical number. Repair a wrong persisted number only
    with full corrected InvoML and numberCorrection { from, reason }. The tool
    performs an authorized canonical get_invoice read-back and returns the
-   active hosted preview URL with the updated invoice facts.
+   active hosted preview URL with the updated invoice facts. If a capability
+   renewal race leaves no active link, the update remains committed and returns
+   url: null with linkState: unavailable; use renew_invoice_link with a stable
+   idempotencyKey instead of repeating the update.
 
 8. Manage saved clients (get_client, create_client, update_client,
    archive_client). Client edits never rewrite historical invoice snapshots.

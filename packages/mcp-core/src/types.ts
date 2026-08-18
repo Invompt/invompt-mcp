@@ -99,19 +99,22 @@ export interface UpdateInvoiceInput {
   }
 }
 
-export interface UpdateInvoiceResult extends Record<string, unknown> {
+interface UpdateInvoiceResultBase extends Record<string, unknown> {
   invoiceId: string
   invoiceNumber: string
   status: string
   total: number | null
   currency: string
   dueDate: string | null
-  url: string
   version: number
   replayed: boolean
   clientId?: string | null
   clientName?: string | null
 }
+
+export type UpdateInvoiceResult =
+  | (UpdateInvoiceResultBase & { url: string; linkState: 'active' })
+  | (UpdateInvoiceResultBase & { url: null; linkState: 'unavailable' })
 
 export interface ArchiveInvoiceInput {
   expectedVersion: number

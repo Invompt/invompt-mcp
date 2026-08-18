@@ -2,7 +2,7 @@
 
 `invompt-mcp` is a self-contained local-beta onboarding CLI and Guest stdio bridge for Invompt MCP. It ships portable skills for Claude Code and Codex; it does not contain invoice business logic, a database client, REST fallback, or an HTTP listener.
 
-> **Prerelease:** this public-development, pre-1.0 source declares `0.11.1` for `next`. It makes no release, production, registry-availability, or fresh-host compatibility claim. Verify live registry state independently before relying on a package version.
+> **Prerelease:** this public-development, pre-1.0 source declares `0.11.2` for `next`. It makes no release, production, registry-availability, or fresh-host compatibility claim. Verify live registry state independently before relying on a package version.
 
 ## Local-beta scope
 
@@ -24,15 +24,15 @@ On first local-beta Invompt use, `invompt-local-beta-onboarding` checks redacted
 For Codex, use the exact pinned CLI command after that choice:
 
 ```sh
-npx --yes invompt-mcp@0.11.1 setup --host codex --mode guest
-npx --yes invompt-mcp@0.11.1 setup --host codex --mode oauth
+npx --yes invompt-mcp@0.11.2 setup --host codex --mode guest
+npx --yes invompt-mcp@0.11.2 setup --host codex --mode oauth
 ```
 
 For Claude Code, use the same pinned package CLI rather than assuming an installed-cache path:
 
 ```sh
-npx --yes invompt-mcp@0.11.1 setup --host claude-code --mode guest
-npx --yes invompt-mcp@0.11.1 setup --host claude-code --mode oauth
+npx --yes invompt-mcp@0.11.2 setup --host claude-code --mode guest
+npx --yes invompt-mcp@0.11.2 setup --host claude-code --mode oauth
 ```
 
 Use the equivalent `status --json` command to inspect only redacted mode, backend, and binding status. This package has no postinstall prompt. It never packages a credential or writes one to a manifest or host configuration.
@@ -51,7 +51,7 @@ Transport mode is separate from account type: hosted OAuth Guest and legacy cred
 
 ## Migration and rollback
 
-`0.11.1` adds explicit local-beta onboarding without migrating the Workspace Hub global OAuth consumer. Choose one local-beta mode. `--allow-file-fallback` is accepted only for Guest setup; unknown and duplicate flags fail closed. Roll back local-beta state with `logout --host …`, then use `reset --yes` only when removing local state and attempting Guest revocation. Restore the global consumer through its OAuth-only installer, not this package.
+`0.11.2` adds nullable update-link recovery: a committed `update_invoice` can report `url: null` with `linkState: unavailable` when capability lookup loses a renewal race, so renew the link without repeating the update. It does not migrate the Workspace Hub global OAuth consumer. Choose one local-beta mode. `--allow-file-fallback` is accepted only for Guest setup; unknown and duplicate flags fail closed. Roll back local-beta state with `logout --host …`, then use `reset --yes` only when removing local state and attempting Guest revocation. Restore the global consumer through its OAuth-only installer, not this package.
 
 ## Error handling and privacy
 

@@ -27,7 +27,7 @@ function dependencies(value: OnboardingDependencies) {
   return {
     state: value.state ?? createAuthStateStore(),
     guestApi: value.guestApi ?? createGuestApi(),
-    packageVersion: value.packageVersion ?? '0.11.1',
+    packageVersion: value.packageVersion ?? '0.11.2',
   }
 }
 
