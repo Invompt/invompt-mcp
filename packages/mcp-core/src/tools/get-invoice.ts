@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import type { InvomptService } from '../service.js'
 import { formatToolError } from './format-error.js'
+import { previewUrlSchema } from './preview-url-schema.js'
 
 const getInvoiceOutputSchema = {
   invoice: z.object({
@@ -17,7 +18,7 @@ const getInvoiceOutputSchema = {
     dueDate: z.string().nullable(),
     templateId: z.string(),
     invomlContent: z.string().nullable(),
-    url: z.string().nullable(),
+    url: previewUrlSchema.nullable(),
     linkState: z.enum(['active', 'unavailable']).optional(),
     expiresAt: z.string().nullable().optional(),
     createdAt: z.string(),

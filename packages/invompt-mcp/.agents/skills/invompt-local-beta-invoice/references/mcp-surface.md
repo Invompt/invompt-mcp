@@ -27,10 +27,10 @@ request, call it once and let the backend decide eligibility.
 | Tool | Authentication | Mutability | Use |
 |---|---|---|---|
 | `ping` | Selected Guest or registered OAuth connection | Read-only | Connectivity and connected workspace state. |
-| `create_invoice` | Selected Guest or registered OAuth connection | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, URL, and version. |
+| `create_invoice` | Selected Guest or registered OAuth connection | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, capability-backed preview URL, and version. |
 | `list_invoices` | Selected Guest or registered OAuth connection | Read-only | Search and page through owned invoices. |
 | `get_invoice` | Selected Guest or registered OAuth connection | Read-only | Retrieve full canonical InvoML. |
-| `update_invoice` | Selected Guest or registered OAuth connection | Idempotent update | Change content or template with expected-version protection, then return the canonical active hosted URL from authorized read-back; use the explicit audited correction object only to repair a wrong persisted number. |
+| `update_invoice` | Selected Guest or registered OAuth connection | Idempotent update | Change content or template with expected-version protection, then return the canonical active capability-backed preview URL from authorized read-back; use the explicit audited correction object only to repair a wrong persisted number. |
 | `archive_invoice` | Selected Guest or registered OAuth connection | Idempotent destructive soft delete | Archive with expected-version protection. |
 | `unarchive_invoice` | Selected Guest or registered OAuth connection | Idempotent restore | Restore an archived invoice with expected-version protection. |
 | `renew_invoice_link` | Selected Guest or registered OAuth connection | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
@@ -68,7 +68,7 @@ Saved billing-party input follows the product contract: name 200 characters; ema
 2000; attention 200; tax ID, business number, and phone 100 each; website 500; two-letter country
 code; HTTP/HTTPS website URLs; and trimmed idempotency keys of 8–128 characters.
 Do not invent tools that the server does not list. PDF rendering is not a published
-`invompt-mcp` tool. Return hosted invoice URLs; use `renew_invoice_link` when `get_invoice`
+`invompt-mcp` tool. Return capability-backed hosted invoice preview URLs; use `renew_invoice_link` when `get_invoice`
 reports no active link. The Web product owns preview and browser PDF download/print.
 
 Account claim is link-first: `create_account_claim_link` accepts no secrets or identifiers and

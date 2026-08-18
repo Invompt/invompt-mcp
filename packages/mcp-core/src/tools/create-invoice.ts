@@ -12,6 +12,7 @@ import {
   structuredInvomlSchema,
 } from './client-schemas.js'
 import { formatToolError } from './format-error.js'
+import { previewUrlSchema } from './preview-url-schema.js'
 
 const sharedCreateInvoiceInputShape = {
   templateId: z.enum(TEMPLATE_IDS).optional().describe('Optional template override.'),
@@ -39,7 +40,7 @@ const createInvoiceOutputSchema = {
   total: z.number().nullable(),
   currency: z.string().min(3),
   dueDate: z.string().nullable(),
-  url: z.url(),
+  url: previewUrlSchema,
   version: z.number().int().min(1),
   replayed: z.boolean(),
   guestName: z.string().min(1).optional(),
@@ -207,7 +208,8 @@ export function registerCreateInvoiceTool(server: McpServer, client: InvomptServ
           readBack.total !== result.total ||
           readBack.currency !== result.currency ||
           readBack.dueDate !== result.dueDate ||
-          readBack.version !== result.version
+          readBack.version !== result.version ||
+          readBack.url !== result.url
         ) {
           throw new InvomptApiError(
             `Created invoice ${result.invoiceId}, but canonical read-back did not match the creation response. The invoice is not ready; inspect it before any follow-up action.`,
