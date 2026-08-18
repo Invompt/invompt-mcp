@@ -272,6 +272,18 @@ export function verifyPackContract({
 
   const readme = readText('README.md')
   assert(readme.includes('public-development, pre-1.0'), 'packaged README states the public-development pre-1.0 status')
+  const coreReadme = readText('../mcp-core/README.md')
+  assert(
+    !coreReadme.includes('input-free Guest-only mutation') &&
+      !coreReadme.includes('Guest claim-link creation is rejected for OAuth'),
+    'mcp-core README excludes stale Guest-only and OAuth-rejection claims',
+  )
+  assert(
+    coreReadme.includes('Guest-account-only') &&
+      coreReadme.includes('hosted OAuth Guest') &&
+      coreReadme.includes('backend is authoritative for eligibility'),
+    'mcp-core README documents hosted OAuth Guest and backend-authoritative eligibility',
+  )
   assert(readme.includes('https://mcp.invompt.com/mcp'), 'packaged README records the hosted MCP endpoint')
   assert(readme.includes('http://localhost:3101/mcp'), 'packaged README records the loopback development endpoint')
   assert(
@@ -303,6 +315,9 @@ export function verifyPackContract({
       gettingStartedSource.includes('GUEST_ACCOUNT_CLAIMED') &&
       gettingStartedSource.includes('server-issued pseudonymous local credential') &&
       gettingStartedSource.includes('separate registered OAuth') &&
+      gettingStartedSource.includes('transport-neutral') &&
+      gettingStartedSource.includes('backend decides eligibility') &&
+      !gettingStartedSource.includes('Do not call\n  create_account_claim_link while connected through OAuth') &&
       !gettingStartedSource.includes('private adapter layer'),
     'getting-started resource documents the input-free link-first Guest claim flow',
   )
@@ -314,6 +329,7 @@ export function verifyPackContract({
       createAccountClaimLinkSource.includes('readOnlyHint: false') &&
       createAccountClaimLinkSource.includes('idempotentHint: false') &&
       createAccountClaimLinkSource.includes('openWorldHint: false') &&
+      !createAccountClaimLinkSource.includes('client.isGuest()') &&
       !createAccountClaimLinkSource.includes('replayed'),
     'create_account_claim_link is operational, input-free, and annotated as a closed non-idempotent mutation',
   )
@@ -325,6 +341,16 @@ export function verifyPackContract({
   const onboardingMetadataMirror = readText('.agents/skills/invompt-local-beta-onboarding/agents/openai.yaml')
   const surfaceSource = readText('skills/invompt-local-beta-invoice/references/mcp-surface.md')
   const surfaceMirror = readText('.agents/skills/invompt-local-beta-invoice/references/mcp-surface.md')
+  assert(
+    !surfaceSource.includes('`create_account_claim_link` is Guest-only; ChatGPT web is a separate remote') &&
+      !surfaceSource.includes('OAuth-only host and cannot create a Guest claim link.'),
+    'MCP surface excludes the stale ChatGPT OAuth claim prohibition',
+  )
+  assert(
+    surfaceSource.includes('hosted OAuth Guest and legacy') &&
+      surfaceSource.includes('backend decide eligibility'),
+    'MCP surface documents hosted OAuth Guest and legacy Guest eligibility',
+  )
   assert(skillSource === skillMirror, 'packaged skill and generated agent mirror are byte-identical')
   assert(surfaceSource === surfaceMirror, 'packaged MCP reference and generated agent mirror are byte-identical')
   assert(onboardingSkill === onboardingMirror, 'packaged onboarding skill and generated agent mirror are byte-identical')
@@ -355,6 +381,8 @@ export function verifyPackContract({
       onboardingSkill.includes('Do not treat active status alone as usable') &&
       onboardingSkill.includes('call `create_account_claim_link` once') &&
       onboardingSkill.includes('`claimUrl` exactly once') &&
+      onboardingSkill.includes('transport; the backend decides') &&
+      !onboardingSkill.includes('Do not call this tool through\nOAuth') &&
       onboardingSkill.includes('`GUEST_ACCOUNT_CLAIMED`'),
     'onboarding skill requires explicit setup plus one-time, expiring Guest claim-link handling',
   )
@@ -376,8 +404,9 @@ export function verifyPackContract({
   ]) {
     assert(
       contents.includes('exactly 16 operational tools') &&
-        contents.includes('create_account_claim_link') &&
-        contents.includes('GUEST_ACCOUNT_CLAIMED'),
+      contents.includes('create_account_claim_link') &&
+      contents.includes('GUEST_ACCOUNT_CLAIMED') &&
+      contents.includes('backend decides'),
       `${path} documents the operational link-first Guest account claim`,
     )
   }

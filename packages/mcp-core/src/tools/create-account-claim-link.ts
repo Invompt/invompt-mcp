@@ -1,7 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 
-import { InvomptApiError } from '../error.js'
 import type { InvomptService } from '../service.js'
 import { formatToolError } from './format-error.js'
 
@@ -33,7 +32,7 @@ export function registerCreateAccountClaimLinkTool(server: McpServer, client: In
     {
       title: 'Create Account Claim Link',
       description:
-        'Create a short-lived browser link that lets the current Guest claim this workspace into an authenticated Invompt account. Guest-only. The link is sensitive, expires, and must be presented once without logging it.',
+        'Create a short-lived browser link that lets the current Guest claim this workspace into an authenticated Invompt account. Guest-account-only and transport-neutral; the backend decides eligibility. The link is sensitive, expires, and must be presented once without logging it.',
       inputSchema: {},
       outputSchema: createAccountClaimLinkOutputSchema,
       annotations: {
@@ -45,13 +44,6 @@ export function registerCreateAccountClaimLinkTool(server: McpServer, client: In
     },
     async () => {
       try {
-        if (!client.isGuest()) {
-          throw new InvomptApiError(
-            'Account claim links are available only for active Guest workspaces.',
-            'ACCOUNT_CLAIM_OAUTH_FORBIDDEN',
-            403,
-          )
-        }
         const result = await client.createAccountClaimLink()
         return {
           structuredContent: result,

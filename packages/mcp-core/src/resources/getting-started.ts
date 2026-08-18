@@ -1,5 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
+import { STRUCTURED_INVOML_GUIDANCE } from '../contracts.js'
+
 export const GETTING_STARTED_URI = 'invompt://docs/getting-started'
 
 const GETTING_STARTED_CONTENT = `Invompt — AI Invoice Generator
@@ -39,6 +41,11 @@ access to the invoicing workflow.
    clientId assigns a saved client and snapshots
    its billing fields; private notes are never copied. Every create requires a
    stable 8–128 character idempotencyKey; reuse it only for an identical retry.
+   ${STRUCTURED_INVOML_GUIDANCE}
+   The structured document path is intentionally minimal and strict: use one
+   party form per party (freeform { content: string } or a direct structured
+   party object), use address { lines: [...] }, and omit unknown fields rather
+   than guessing. Advanced tax fields belong in legacy serialized invoml.
 
 6. Browse invoices (list_invoices, get_invoice) — search existing invoices,
    read their InvoML content and current version, use them as templates for new
@@ -85,11 +92,12 @@ access to the invoicing workflow.
   currency formatting, and text direction.
 
 - The MCP surface exposes exactly 16 operational tools. create_account_claim_link
-  is a Guest-only mutation that creates a short-lived browser link for an explicit
+  is a Guest-account-only, transport-neutral mutation that creates a short-lived browser link for an explicit
   account-claim request. It accepts no secrets or identifiers as input.
 
-- Guest onboarding and registered OAuth are separate connection modes. Do not call
-  create_account_claim_link while connected through OAuth.
+- Guest onboarding and registered OAuth are separate connection modes, not account types.
+  Hosted OAuth Guest and legacy credential Guest are both Guest principals. On an explicit
+  claim request, call create_account_claim_link once; the backend decides eligibility.
 
 ## Tips
 
@@ -108,13 +116,15 @@ access to the invoicing workflow.
 ## Connection Setup
 
 Complete onboarding before calling an invoice tool. Guest mode uses a server-issued
-pseudonymous local credential; registered OAuth is a separate hosted HTTPS sign-in.
+pseudonymous local credential; registered OAuth is a separate hosted HTTPS sign-in. Transport
+mode is not account type, so hosted OAuth Guest and legacy credential Guest are both Guest
+principals.
 Agents must never discover, copy, print, or synthesize authentication material. When
 the user explicitly asks to claim the active Guest workspace, call
-create_account_claim_link once. Present claimUrl exactly once, explain that it expires,
+create_account_claim_link once regardless of transport; the backend decides eligibility. Present claimUrl exactly once, explain that it expires,
 and never log or repeat it. Do not include credentials, account IDs, claim IDs, or
-other internal identifiers. After the browser claim succeeds, the old Guest credential
-returns GUEST_ACCOUNT_CLAIMED; do not retry it.
+other internal identifiers. After the browser claim succeeds, the OAuth grant stays connected
+and revalidates registered state; the old Guest credential returns GUEST_ACCOUNT_CLAIMED; do not retry it.
 `
 
 export function registerGettingStartedResource(server: McpServer): void {

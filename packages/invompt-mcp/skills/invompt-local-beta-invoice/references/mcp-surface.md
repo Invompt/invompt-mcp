@@ -5,8 +5,9 @@ Invompt MCP service exposes these surfaces after `invompt-local-beta-onboarding`
 or OAuth connection.
 
 The surface has exactly 16 operational tools. Authentication is established by the selected Guest
-or OAuth connection. `create_account_claim_link` is Guest-only; ChatGPT web is a separate remote
-OAuth-only host and cannot create a Guest claim link.
+or OAuth connection. Transport mode is separate from account type: hosted OAuth Guest and legacy
+credential Guest are both eligible Guest principals for `create_account_claim_link`; on an explicit
+request, call it once and let the backend decide eligibility.
 
 ## Resources
 
@@ -33,7 +34,7 @@ OAuth-only host and cannot create a Guest claim link.
 | `archive_invoice` | Selected Guest or registered OAuth connection | Idempotent destructive soft delete | Archive with expected-version protection. |
 | `unarchive_invoice` | Selected Guest or registered OAuth connection | Idempotent restore | Restore an archived invoice with expected-version protection. |
 | `renew_invoice_link` | Selected Guest or registered OAuth connection | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
-| `create_account_claim_link` | Guest only | Non-idempotent mutation | Create a short-lived browser claim URL with no input. Present it once, explain expiry, and never log it. |
+| `create_account_claim_link` | Guest account; transport-neutral | Non-idempotent mutation | On an explicit request, call once with no input from either connection mode. The backend decides eligibility. Present the short-lived browser claim URL once, explain expiry, and never log it. |
 | `get_settings` | Selected Guest or registered OAuth connection | Read-only | Read company, currency, numbering, and payment defaults. |
 | `update_settings` | Selected Guest or registered OAuth connection | Idempotent update | Partially update invoice defaults without inventing omitted values. |
 | `list_clients` | Selected Guest or registered OAuth connection | Read-only | Search saved clients and receive deterministic exact/ambiguous/none resolution. |
