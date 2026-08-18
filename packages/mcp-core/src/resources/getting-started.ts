@@ -34,7 +34,8 @@ access to the invoicing workflow.
 
 5. Create invoices, quotes, estimates, and pro formas (create_invoice) —
    generate InvoML from the user's request and return the verified canonical
-   number, status, amount, currency, due date, version, and hosted URL. An
+   number, status, amount, currency, due date, version, and capability-backed
+   hosted preview URL. An
    authored meta.number is exact: a different server value is a hard failure.
    The tool performs canonical get_invoice read-back before reporting success. Recipient
    and issuer identity are optional. Never invent issuer identity. Passing
@@ -58,7 +59,7 @@ access to the invoicing workflow.
    updates preserve the canonical number. Repair a wrong persisted number only
    with full corrected InvoML and numberCorrection { from, reason }. The tool
    performs an authorized canonical get_invoice read-back and returns the
-   active hosted URL with the updated invoice facts.
+   active hosted preview URL with the updated invoice facts.
 
 8. Manage saved clients (get_client, create_client, update_client,
    archive_client). Client edits never rewrite historical invoice snapshots.
@@ -84,8 +85,9 @@ access to the invoicing workflow.
   detachable remittance stub and is opt-in; omit it from the document,
   style.order, and style.blocks unless the user explicitly asks for one.
 
-- Invoice URLs: Every invoice gets a hosted URL for viewing and browser-based
-  PDF download. Return that URL instead of rendering or writing a PDF locally.
+- Invoice URLs: Every invoice gets a capability-backed hosted preview URL for
+  viewing and browser-based PDF download. Return that URL instead of rendering
+  or writing a PDF locally.
 
 - Language and locale: Preserve the user's language in descriptions and notes.
   Use the locale supported by the live InvoML spec for dates, numbers, labels,

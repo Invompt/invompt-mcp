@@ -1,7 +1,7 @@
 {
   "name": "invompt-mcp",
   "mcpName": "com.invompt/invompt-mcp",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Local-beta Invompt onboarding CLI and Guest stdio bridge",
   "type": "module",
   "bin": { "invompt-mcp": "./dist/index.js" },

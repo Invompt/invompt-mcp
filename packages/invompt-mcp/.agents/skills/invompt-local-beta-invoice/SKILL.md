@@ -87,7 +87,7 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
 7. Call `create_invoice` with the serialized InvoML, a stable 8–128 character `idempotencyKey`,
    and the selected saved `clientId` when applicable. Reuse the key only for an identical retry.
 8. Return the exact canonical number, status, amount, currency, due date, `invoiceId`, `version`,
-   and hosted `url` supplied by Invompt. Creation is successful only after the tool compares the
+   and capability-backed hosted preview `url` supplied by Invompt. Creation is successful only after the tool compares the
    authored number with the response and performs canonical `get_invoice` read-back. If returned,
    use the friendly `guestName`. Never expose the underlying guest credential.
 
@@ -104,7 +104,7 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
 - Send the latest invoice `version` as `expectedVersion` plus a stable 8–128 character
   `idempotencyKey` for update and archive. On version conflict, read again before retrying.
 - Treat an update as successful only when `update_invoice` returns the canonical number, status,
-  amount, currency, due date, `invoiceId`, version, and active hosted `url` verified by authorized
+  amount, currency, due date, `invoiceId`, version, and active capability-backed hosted preview `url` verified by authorized
   `get_invoice` read-back. Never rely on a URL remembered by the host.
 - If `get_invoice` reports no active hosted link, use `renew_invoice_link` with a stable
   idempotency key. Renewal rotates only the 72-hour public capability and does not revise the
@@ -135,4 +135,4 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
 - Never launch Chromium, Puppeteer, or a PDF CLI for this workflow.
 - Never silently switch to another MCP server or environment.
 - Never include credentials, account IDs, claim IDs, nonces, or OAuth data in account-claim input or output.
-- Return Invompt's hosted URL; the Web product owns preview and download/print.
+- Return Invompt's capability-backed hosted preview URL; the Web product owns preview and download/print.

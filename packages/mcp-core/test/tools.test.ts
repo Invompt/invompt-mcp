@@ -20,6 +20,7 @@ import { registerRenewInvoiceLinkTool } from '../src/tools/renew-invoice-link.js
 import { registerUnarchiveInvoiceTool } from '../src/tools/unarchive-invoice.js'
 import { registerUpdateInvoiceTool } from '../src/tools/update-invoice.js'
 import { registerUpdateSettingsTool } from '../src/tools/update-settings.js'
+import { previewUrlSchema } from '../src/tools/preview-url-schema.js'
 
 type ToolHandler = (args: Record<string, unknown>) => Promise<unknown>
 
@@ -86,6 +87,8 @@ const VALID_STRUCTURED_DOCUMENT = {
   items: [{ description: 'Structured sample', quantity: 2, unitPrice: 25.5 }],
 }
 const IDEMPOTENCY_KEY = 'invoice-test-key'
+const PREVIEW_TOKEN = 'a'.repeat(43)
+const PREVIEW_URL = `https://documents.example.invalid/preview/${PREVIEW_TOKEN}`
 
 const invoiceResult = {
   invoiceId: 'inv_example_007',
@@ -94,7 +97,7 @@ const invoiceResult = {
   total: 318.75,
   currency: 'SGD',
   dueDate: '2030-02-15',
-  url: 'https://documents.example.invalid/invoice/inv_example_007',
+  url: PREVIEW_URL,
   version: 1,
   replayed: false,
 }
@@ -105,7 +108,7 @@ const updateInvoiceResult = {
   total: 318.75,
   currency: 'SGD',
   dueDate: '2030-02-15',
-  url: 'https://documents.example.invalid/invoice/inv_example_007',
+  url: PREVIEW_URL,
   version: 2,
   replayed: false,
 }
@@ -118,6 +121,7 @@ const invoiceReadBack = {
     currency: invoiceResult.currency,
     dueDate: invoiceResult.dueDate,
     version: invoiceResult.version,
+    url: invoiceResult.url,
   },
 }
 
@@ -154,11 +158,80 @@ const invoiceDetail = {
     dueDate: null,
     templateId: 'standard',
     invomlContent: 'meta:\n  invoice_number: INV-001',
-    url: 'https://documents.example.invalid/invoice/inv_example_001',
+    url: PREVIEW_URL,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
   },
 }
+
+describe('capability preview URL schema', () => {
+  const invalidUrls = [
+    'https://documents.example.invalid/invoice/33b7b1a9-9a1f-47d1-a4c4-532e1d0d3e90',
+    `http://documents.example.invalid/preview/${PREVIEW_TOKEN}`,
+    `https://documents.example.invalid/preview/${PREVIEW_TOKEN.slice(1)}`,
+    `${PREVIEW_URL}?download=1`,
+    `${PREVIEW_URL}#download`,
+    `https://viewer@documents.example.invalid/preview/${PREVIEW_TOKEN}`,
+    `https://viewer:secret@documents.example.invalid/preview/${PREVIEW_TOKEN}`,
+  ]
+
+  test('accepts a local http preview URL without pinning the host', () => {
+    expect(previewUrlSchema.safeParse(`http://localhost:3101/preview/${PREVIEW_TOKEN}`).success).toBe(true)
+  })
+
+  test.each(invalidUrls)('rejects non-capability URL %s', (url) => {
+    expect(previewUrlSchema.safeParse(url).success).toBe(false)
+  })
+
+  test('is used by every invoice tool that returns a URL', () => {
+    const scenarios = [
+      {
+        name: 'create_invoice',
+        register: (server: McpServer) =>
+          registerCreateInvoiceTool(server, {} as Parameters<typeof registerCreateInvoiceTool>[1]),
+        output: (url: string) => ({ ...invoiceResult, url }),
+      },
+      {
+        name: 'get_invoice',
+        register: (server: McpServer) => registerGetInvoiceTool(server, {} as Parameters<typeof registerGetInvoiceTool>[1]),
+        output: (url: string) => ({ ...invoiceDetail, invoice: { ...invoiceDetail.invoice, url } }),
+      },
+      {
+        name: 'update_invoice',
+        register: (server: McpServer) =>
+          registerUpdateInvoiceTool(server, {} as Parameters<typeof registerUpdateInvoiceTool>[1]),
+        output: (url: string) => ({ ...updateInvoiceResult, url }),
+      },
+      {
+        name: 'renew_invoice_link',
+        register: (server: McpServer) =>
+          registerRenewInvoiceLinkTool(server, {} as Parameters<typeof registerRenewInvoiceLinkTool>[1]),
+        output: (url: string) => ({
+          invoiceId: 'inv_1',
+          url,
+          expiresAt: '2026-08-02T00:00:00.000Z',
+          replayed: false,
+        }),
+      },
+    ]
+
+    for (const scenario of scenarios) {
+      const { server } = makeServerMock()
+      scenario.register(server)
+      const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+        outputSchema: Record<string, z.ZodType>
+      }
+      const outputSchema = z.strictObject(config.outputSchema)
+      const discoverySchema = z.toJSONSchema(outputSchema)
+
+      expect(outputSchema.safeParse(scenario.output(PREVIEW_URL)).success, scenario.name).toBe(true)
+      expect(JSON.stringify(discoverySchema), scenario.name).toContain('preview')
+      for (const invalidUrl of invalidUrls) {
+        expect(outputSchema.safeParse(scenario.output(invalidUrl)).success, `${scenario.name}: ${invalidUrl}`).toBe(false)
+      }
+    }
+  })
+})
 
 const settingsResult = {
   settings: {
@@ -303,6 +376,46 @@ describe('create_invoice tool', () => {
       idempotencyKey: IDEMPOTENCY_KEY,
     })
     expect(client.getInvoice).toHaveBeenCalledWith(invoiceResult.invoiceId)
+  })
+
+  test('fails closed when canonical read-back returns a different capability URL without exposing either token', async () => {
+    const { server, getHandler } = makeServerMock()
+    const readBackUrl = `https://documents.example.invalid/preview/${'b'.repeat(43)}`
+    const client = {
+      createInvoice: vi.fn().mockResolvedValue(invoiceResult),
+      getInvoice: vi.fn().mockResolvedValue({
+        invoice: { ...invoiceReadBack.invoice, url: readBackUrl },
+      }),
+    } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+
+    const result = (await getHandler('create_invoice')({
+      invoml: VALID_INVOML,
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })) as { content: Array<{ text: string }>; isError?: boolean }
+
+    expect(parseToolErrorText(result).error.code).toBe('CANONICAL_INVOICE_READBACK_MISMATCH')
+    expect(result.content[0]?.text).not.toContain(PREVIEW_TOKEN)
+    expect(result.content[0]?.text).not.toContain('b'.repeat(43))
+  })
+
+  test('fails closed when canonical read-back has no active capability URL', async () => {
+    const { server, getHandler } = makeServerMock()
+    const client = {
+      createInvoice: vi.fn().mockResolvedValue(invoiceResult),
+      getInvoice: vi.fn().mockResolvedValue({
+        invoice: { ...invoiceReadBack.invoice, url: null },
+      }),
+    } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+
+    const result = (await getHandler('create_invoice')({
+      invoml: VALID_INVOML,
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })) as { content: Array<{ text: string }>; isError?: boolean }
+
+    expect(parseToolErrorText(result).error.code).toBe('CANONICAL_INVOICE_READBACK_MISMATCH')
+    expect(result.content[0]?.text).not.toContain(PREVIEW_TOKEN)
   })
 
   test('normalizes a ChatGPT-like structured document deterministically', async () => {
@@ -852,7 +965,7 @@ describe('archive_invoice tool', () => {
 describe('renew_invoice_link tool', () => {
   const renewed = {
     invoiceId: 'inv_1',
-    url: 'https://documents.example.invalid/preview/replacement',
+    url: PREVIEW_URL,
     expiresAt: '2026-08-02T00:00:00.000Z',
     replayed: false,
   }

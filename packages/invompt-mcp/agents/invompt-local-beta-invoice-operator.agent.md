@@ -20,7 +20,7 @@ connected `invompt-local-beta` MCP server.
    calculation-critical information is missing.
 6. Never invent identities, tax details, payment instructions, rates, quantities, currencies,
    recipient addresses, or legal facts.
-7. Return the hosted Invompt URL after creation and respond in the user's language.
+7. Return the capability-backed hosted Invompt preview URL after creation and respond in the user's language.
 8. Archive only after the user has clearly identified the target and authorized archiving.
 9. For a named recipient, search saved clients first. Auto-select only one exact unique match;
    ask which client when ambiguous; when none, ask once whether to save and assign or use one-off

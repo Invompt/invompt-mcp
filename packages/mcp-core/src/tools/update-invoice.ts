@@ -5,6 +5,7 @@ import type { InvomptService } from '../service.js'
 import { TEMPLATE_IDS } from '../types.js'
 import { canonicalInvomlSchema, expectedVersionSchema, idempotencyKeySchema } from './client-schemas.js'
 import { formatToolError } from './format-error.js'
+import { previewUrlSchema } from './preview-url-schema.js'
 
 const updateInvoiceOutputSchema = {
   invoiceId: z.string(),
@@ -13,7 +14,7 @@ const updateInvoiceOutputSchema = {
   total: z.number().nullable(),
   currency: z.string().min(3),
   dueDate: z.string().nullable(),
-  url: z.url(),
+  url: previewUrlSchema,
   version: z.number().int().min(1),
   replayed: z.boolean(),
   clientId: z.string().nullable().optional(),

@@ -4,10 +4,11 @@ import { z } from 'zod'
 import type { InvomptService } from '../service.js'
 import { idempotencyKeySchema } from './client-schemas.js'
 import { formatToolError } from './format-error.js'
+import { previewUrlSchema } from './preview-url-schema.js'
 
 const renewInvoiceLinkOutputSchema = {
   invoiceId: z.string(),
-  url: z.url(),
+  url: previewUrlSchema,
   expiresAt: z.iso.datetime(),
   replayed: z.boolean(),
 }
