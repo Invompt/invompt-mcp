@@ -18,7 +18,7 @@
     "prepublishOnly": "npm run check"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.8",
     "@types/node": "^26.1.2",
     "@vitest/coverage-v8": "^4.1.10",
     "tsx": "^4.23.12",
