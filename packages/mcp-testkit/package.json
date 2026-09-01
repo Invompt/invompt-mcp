@@ -1,6 +1,6 @@
 {
   "name": "@invompt/mcp-testkit",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "private": true,
   "description": "Contract fixtures for Invompt MCP integrations",
   "type": "module",
@@ -13,7 +13,7 @@
   "repository": { "type": "git", "url": "https://github.com/Invompt/invompt-mcp.git" },
   "license": "MIT",
   "engines": { "node": ">=18" },
-  "dependencies": { "@invompt/mcp-core": "0.11.3" },
+  "dependencies": { "@invompt/mcp-core": "0.11.4" },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc --project tsconfig.json",
