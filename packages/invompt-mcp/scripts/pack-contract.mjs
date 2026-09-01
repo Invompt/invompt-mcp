@@ -294,8 +294,8 @@ export function verifyPackContract({
     readme.includes('does not contain invoice business logic') && readme.includes('no runtime dependencies'),
     'packaged README limits bridge responsibility and dependencies',
   )
-  assert(readme.includes('npx --yes invompt-mcp@0.11.3 setup --host codex'), 'packaged README pins Codex setup to 0.11.3')
-  assert(readme.includes('npx --yes invompt-mcp@0.11.3 setup --host claude-code'), 'packaged README pins Claude setup to 0.11.3')
+  assert(readme.includes('npx --yes invompt-mcp@0.11.4 setup --host codex'), 'packaged README pins Codex setup to 0.11.4')
+  assert(readme.includes('npx --yes invompt-mcp@0.11.4 setup --host claude-code'), 'packaged README pins Claude setup to 0.11.4')
   assert(readme.includes('--allow-file-fallback') && readme.includes('auth-state.json'), 'packaged README documents explicit fallback and state paths')
   assert(readme.includes('no postinstall prompt'), 'packaged README states that setup has no postinstall prompt')
   assert(readme.includes('ChatGPT web is separate and remote OAuth-only'), 'packaged README distinguishes ChatGPT remote OAuth')
@@ -376,8 +376,8 @@ export function verifyPackContract({
       onboardingSkill.includes('ChatGPT web, use remote OAuth only') &&
       onboardingSkill.includes('owns only the host server `invompt-local-beta`') &&
       onboardingSkill.includes('global `invompt` provider') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.3 setup --host codex') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.3 setup --host claude-code') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.4 setup --host codex') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.4 setup --host claude-code') &&
       onboardingSkill.includes('deliberate reset/recovery') &&
       onboardingSkill.includes('before another setup attempt') &&
       onboardingSkill.includes('binding.mode ===\nselectedMode') &&

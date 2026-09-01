@@ -25,8 +25,8 @@ host bindings; it does not print the credential.
 This local-beta flow owns only the host server `invompt-local-beta`. Never remove, log out, or
 reconfigure the separate global `invompt` provider; it remains hosted OAuth-only.
 
-- Claude Code: `npx --yes invompt-mcp@0.11.3 status --json`
-- Codex: `npx --yes invompt-mcp@0.11.3 status --json`
+- Claude Code: `npx --yes invompt-mcp@0.11.4 status --json`
+- Codex: `npx --yes invompt-mcp@0.11.4 status --json`
 
 Treat a current host binding as usable only when its status is active, `binding.mode ===
 selectedMode`, and `binding.epoch === state.epoch`. Do not treat active status alone as usable. If
@@ -50,8 +50,8 @@ Run exactly one deterministic setup command for the current local host after the
 
 | Host | Guest | OAuth |
 |---|---|---|
-| Claude Code | `npx --yes invompt-mcp@0.11.3 setup --host claude-code --mode guest` | `npx --yes invompt-mcp@0.11.3 setup --host claude-code --mode oauth` |
-| Codex | `npx --yes invompt-mcp@0.11.3 setup --host codex --mode guest` | `npx --yes invompt-mcp@0.11.3 setup --host codex --mode oauth` |
+| Claude Code | `npx --yes invompt-mcp@0.11.4 setup --host claude-code --mode guest` | `npx --yes invompt-mcp@0.11.4 setup --host claude-code --mode oauth` |
+| Codex | `npx --yes invompt-mcp@0.11.4 setup --host codex --mode guest` | `npx --yes invompt-mcp@0.11.4 setup --host codex --mode oauth` |
 
 The default Guest secret store is macOS Keychain. If Keychain is unavailable and the user
 explicitly accepts a file fallback, append `--allow-file-fallback`; otherwise stop and report the
