@@ -5,7 +5,7 @@ import type { InvoiceTemplateDocumentType } from '../types.js'
 export const invoiceTemplateDocumentTypes = ['invoice', 'quote', 'estimate', 'receipt', 'credit_note'] as const
 export const invoiceTemplateDocumentTypeSchema = z.enum(invoiceTemplateDocumentTypes)
 
-export const templateIdSchema = z.uuid().describe('Company-owned or seeded system template ID')
+export const templateIdSchema = z.uuid().describe('Company-owned template ID')
 export const templateVersionSchema = z.number().int().min(1).describe('Immutable template version')
 
 const safeDiscountSchema = z.union([
