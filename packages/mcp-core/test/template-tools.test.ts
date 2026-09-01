@@ -7,6 +7,7 @@ import { registerGetInvoiceTemplateTool } from '../src/tools/get-invoice-templat
 import { registerListInvoiceTemplatesTool } from '../src/tools/list-invoice-templates.js'
 import { registerPreviewInvoiceTemplateExtractionTool } from '../src/tools/preview-invoice-template-extraction.js'
 import { registerSaveInvoiceAsTemplateTool } from '../src/tools/save-invoice-as-template.js'
+import { templateIdSchema } from '../src/tools/template-schemas.js'
 import type { InvomptService } from '../src/service.js'
 
 type Handler = (input: Record<string, unknown>) => Promise<unknown>
@@ -80,6 +81,7 @@ describe('reusable invoice template tools', () => {
     registerGetInvoiceTemplateTool(server, service({ getInvoiceTemplate }))
 
     const outputSchema = configs.get_invoice_template.outputSchema as unknown as z.ZodType
+    expect(templateIdSchema.description).toBe('Company-owned template ID')
     expect(outputSchema.safeParse({ template: detail }).success).toBe(true)
     expect(outputSchema.safeParse({ template: { ...detail, version: { ...detail.version, html: '<p>unsafe</p>' } } }).success).toBe(false)
     await handlers.get_invoice_template({ templateId: TEMPLATE_ID })
