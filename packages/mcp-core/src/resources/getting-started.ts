@@ -96,7 +96,7 @@ access to the invoicing workflow.
   Use the locale supported by the live InvoML spec for dates, numbers, labels,
   currency formatting, and text direction.
 
-- The MCP surface exposes exactly 16 operational tools. create_account_claim_link
+- The MCP surface exposes exactly 20 operational tools. create_account_claim_link
   is a Guest-account-only, transport-neutral mutation that creates a short-lived browser link for an explicit
   account-claim request. It accepts no secrets or identifiers as input.
 

@@ -84,7 +84,7 @@ describe('getting-started resource', () => {
     expect(text).toContain('server-issued pseudonymous local credential')
     expect(text).toContain('separate registered OAuth')
     expect(text).toContain('Connection Setup')
-    expect(text).toContain('exactly 16 operational tools')
+    expect(text).toContain('exactly 20 operational tools')
     expect(text).toContain('create_account_claim_link')
     expect(text).toContain('Present claimUrl exactly once')
     expect(text).toContain('GUEST_ACCOUNT_CLAIMED')

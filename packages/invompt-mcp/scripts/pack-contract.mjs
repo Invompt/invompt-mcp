@@ -76,6 +76,10 @@ const OPERATIONAL_TOOL_SOURCES = Object.freeze([
   ['../mcp-core/src/tools/ping.ts', 'ping'],
   ['../mcp-core/src/tools/create-invoice.ts', 'create_invoice'],
   ['../mcp-core/src/tools/list-invoices.ts', 'list_invoices'],
+  ['../mcp-core/src/tools/list-invoice-templates.ts', 'list_invoice_templates'],
+  ['../mcp-core/src/tools/get-invoice-template.ts', 'get_invoice_template'],
+  ['../mcp-core/src/tools/preview-invoice-template-extraction.ts', 'preview_invoice_template_extraction'],
+  ['../mcp-core/src/tools/save-invoice-as-template.ts', 'save_invoice_as_template'],
   ['../mcp-core/src/tools/get-invoice.ts', 'get_invoice'],
   ['../mcp-core/src/tools/update-invoice.ts', 'update_invoice'],
   ['../mcp-core/src/tools/archive-invoice.ts', 'archive_invoice'],
@@ -290,8 +294,8 @@ export function verifyPackContract({
     readme.includes('does not contain invoice business logic') && readme.includes('no runtime dependencies'),
     'packaged README limits bridge responsibility and dependencies',
   )
-  assert(readme.includes('npx --yes invompt-mcp@0.11.2 setup --host codex'), 'packaged README pins Codex setup to 0.11.2')
-  assert(readme.includes('npx --yes invompt-mcp@0.11.2 setup --host claude-code'), 'packaged README pins Claude setup to 0.11.2')
+  assert(readme.includes('npx --yes invompt-mcp@0.11.3 setup --host codex'), 'packaged README pins Codex setup to 0.11.3')
+  assert(readme.includes('npx --yes invompt-mcp@0.11.3 setup --host claude-code'), 'packaged README pins Claude setup to 0.11.3')
   assert(readme.includes('--allow-file-fallback') && readme.includes('auth-state.json'), 'packaged README documents explicit fallback and state paths')
   assert(readme.includes('no postinstall prompt'), 'packaged README states that setup has no postinstall prompt')
   assert(readme.includes('ChatGPT web is separate and remote OAuth-only'), 'packaged README distinguishes ChatGPT remote OAuth')
@@ -309,7 +313,7 @@ export function verifyPackContract({
   assert(!gettingStartedSource.includes('INVOMPT_GUEST_CREDENTIAL'), 'getting-started resource exposes no credential materialization instructions')
   assert(!gettingStartedSource.includes('~/.invompt/'), 'getting-started resource exposes no private credential path')
   assert(
-    gettingStartedSource.includes('exactly 16 operational tools') &&
+    gettingStartedSource.includes('exactly 20 operational tools') &&
       gettingStartedSource.includes('create_account_claim_link') &&
       gettingStartedSource.includes('Present claimUrl exactly once') &&
       gettingStartedSource.includes('GUEST_ACCOUNT_CLAIMED') &&
@@ -372,8 +376,8 @@ export function verifyPackContract({
       onboardingSkill.includes('ChatGPT web, use remote OAuth only') &&
       onboardingSkill.includes('owns only the host server `invompt-local-beta`') &&
       onboardingSkill.includes('global `invompt` provider') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.2 setup --host codex') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.2 setup --host claude-code') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.3 setup --host codex') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.3 setup --host claude-code') &&
       onboardingSkill.includes('deliberate reset/recovery') &&
       onboardingSkill.includes('before another setup attempt') &&
       onboardingSkill.includes('binding.mode ===\nselectedMode') &&
@@ -386,7 +390,7 @@ export function verifyPackContract({
       onboardingSkill.includes('`GUEST_ACCOUNT_CLAIMED`'),
     'onboarding skill requires explicit setup plus one-time, expiring Guest claim-link handling',
   )
-  assert(OPERATIONAL_TOOL_SOURCES.length === 16, 'pack-contract inspects the exact 16 operational tool sources')
+  assert(OPERATIONAL_TOOL_SOURCES.length === 20, 'pack-contract inspects the exact 20 operational tool sources')
   for (const [path, toolName] of OPERATIONAL_TOOL_SOURCES) {
     const contents = readText(path)
     assert(
@@ -403,7 +407,7 @@ export function verifyPackContract({
     ['skills/invompt-local-beta-invoice/references/mcp-surface.md', surfaceSource],
   ]) {
     assert(
-      contents.includes('exactly 16 operational tools') &&
+      contents.includes('exactly 20 operational tools') &&
       contents.includes('create_account_claim_link') &&
       contents.includes('GUEST_ACCOUNT_CLAIMED') &&
       contents.includes('backend decides'),
