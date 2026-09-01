@@ -4,7 +4,7 @@ Use the tool schemas exposed by the connected server as the final authority. The
 Invompt MCP service exposes these surfaces after `invompt-local-beta-onboarding` confirms the selected Guest
 or OAuth connection.
 
-The surface has exactly 16 operational tools. Authentication is established by the selected Guest
+The surface has exactly 20 operational tools. Authentication is established by the selected Guest
 or OAuth connection. Transport mode is separate from account type: hosted OAuth Guest and legacy
 credential Guest are both eligible Guest principals for `create_account_claim_link`; on an explicit
 request, call it once and let the backend decide eligibility.
@@ -42,6 +42,10 @@ request, call it once and let the backend decide eligibility.
 | `create_client` | Selected Guest or registered OAuth connection | Idempotent create | Explicitly save after user choice; protect against unconfirmed duplicates. |
 | `update_client` | Selected Guest or registered OAuth connection | Idempotent update | Partially edit with expected-version conflict protection. |
 | `archive_client` | Selected Guest or registered OAuth connection | Destructive soft delete | Archive after explicit confirmation; preserve invoice history. |
+| `list_invoice_templates` | Selected Guest or registered OAuth connection | Read-only | List active reusable template metadata for the connected workspace. |
+| `get_invoice_template` | Selected Guest or registered OAuth connection | Read-only | Read one immutable validated semantic template preset; v1 HTML/CSS are empty. |
+| `preview_invoice_template_extraction` | Selected Guest or registered OAuth connection | Read-only | Preview a checksum-bound safe projection from an immutable invoice revision; line items require explicit opt-in. |
+| `save_invoice_as_template` | Selected Guest or registered OAuth connection | Idempotent create | Save a confirmed checksum-bound safe projection; host-supplied HTML/CSS/assets/arbitrary defaults are rejected. |
 
 For a named recipient, search saved clients first. Auto-select only an exact unique match. Ask the
 user to choose among multiple matches. With no match, ask one question offering save-and-assign or

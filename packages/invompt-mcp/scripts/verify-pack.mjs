@@ -183,6 +183,7 @@ try {
 
         const operationalToolNames = [
           'ping', 'create_invoice', 'list_invoices', 'get_invoice', 'update_invoice',
+          'list_invoice_templates', 'get_invoice_template', 'preview_invoice_template_extraction', 'save_invoice_as_template',
           'archive_invoice', 'unarchive_invoice', 'renew_invoice_link', 'create_account_claim_link', 'get_settings',
           'update_settings', 'list_clients', 'get_client', 'create_client', 'update_client',
           'archive_client',
@@ -240,7 +241,7 @@ try {
         assert.equal(remote.started, true)
         assert.deepEqual(remote.sent.map(({ method }) => method), methods)
         assert.deepEqual(stdio.sent[1].result.tools.map(({ name }) => name), toolNames)
-        assert.equal(operationalToolNames.length, 16)
+        assert.equal(operationalToolNames.length, 20)
         assert.equal(toolNames.includes('create_account_claim_link'), true)
         assert.deepEqual(stdio.sent[2].result.resources.map(({ name }) => name), resourceNames)
         assert.deepEqual(stdio.sent[3].result.prompts.map(({ name }) => name), promptNames)

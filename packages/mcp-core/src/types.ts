@@ -54,6 +54,96 @@ export interface ListInvoicesResult extends Record<string, unknown> {
   hasMore: boolean
 }
 
+export type InvoiceTemplateDocumentType = 'invoice' | 'quote' | 'estimate' | 'receipt' | 'credit_note'
+export type InvoiceTemplateScope = 'company'
+export type InvoiceTemplateStatus = 'active' | 'archived'
+export type LineItemPresetMode = 'none' | 'explicit'
+export const INVOICE_TEMPLATE_ERROR_CODES = [
+  'NOT_FOUND',
+  'VALIDATION_ERROR',
+  'TEMPLATE_PROJECTION_STALE',
+  'TEMPLATE_NAME_CONFLICT',
+  'TEMPLATE_VERSION_CONFLICT',
+  'TEMPLATE_LIMIT_EXCEEDED',
+  'TEMPLATE_STORAGE_LIMIT_EXCEEDED',
+  'IDEMPOTENCY_CONFLICT',
+  'SERVICE_UNAVAILABLE',
+] as const
+export type InvoiceTemplateErrorCode = (typeof INVOICE_TEMPLATE_ERROR_CODES)[number]
+
+export interface InvoiceTemplateSummary {
+  id: string
+  companyId: string
+  documentType: InvoiceTemplateDocumentType
+  name: string
+  scope: InvoiceTemplateScope
+  status: InvoiceTemplateStatus
+  currentVersion: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface InvoiceTemplateVersion {
+  version: number
+  schemaVersion: string
+  /** v1 stores a validated semantic preset; rendered source markup is never reusable. */
+  html: ''
+  css: ''
+  defaultData: Record<string, unknown>
+  lineItemPresetMode: LineItemPresetMode
+  assetManifest: []
+  compilerVersion: string
+  checksum: string
+  canonicalBytes: number
+  createdAt: string
+}
+
+export interface InvoiceTemplateDetail extends InvoiceTemplateSummary {
+  version: InvoiceTemplateVersion | null
+}
+
+export interface ListInvoiceTemplatesParams {
+  documentType?: InvoiceTemplateDocumentType
+  status?: 'active'
+}
+
+export interface ListInvoiceTemplatesResult extends Record<string, unknown> {
+  templates: InvoiceTemplateSummary[]
+}
+
+export interface GetInvoiceTemplateResult extends Record<string, unknown> {
+  template: InvoiceTemplateDetail
+}
+
+export interface PreviewInvoiceTemplateExtractionInput {
+  invoiceId: string
+  version: number
+  includeLineItems?: boolean
+}
+
+export interface InvoiceTemplateProjection extends Omit<InvoiceTemplateVersion, 'version' | 'createdAt'> {
+  invoiceId: string
+  invoiceVersion: number
+  documentType: InvoiceTemplateDocumentType
+  includedPaths: string[]
+  excludedPaths: Array<{ path: string; reason: string }>
+}
+
+export interface PreviewInvoiceTemplateExtractionResult extends Record<string, unknown> {
+  projection: InvoiceTemplateProjection
+}
+
+export interface SaveInvoiceAsTemplateInput extends PreviewInvoiceTemplateExtractionInput {
+  projectionChecksum: string
+  name: string
+  idempotencyKey: string
+}
+
+export interface SaveInvoiceAsTemplateResult extends Record<string, unknown> {
+  template: InvoiceTemplateDetail
+  replayed: boolean
+}
+
 export interface InvoiceDetail extends Record<string, unknown> {
   id: string
   invoiceNumber: string

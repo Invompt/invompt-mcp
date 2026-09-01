@@ -14,6 +14,13 @@ import type {
   ListClientsResult,
   ListInvoicesParams,
   ListInvoicesResult,
+  ListInvoiceTemplatesParams,
+  ListInvoiceTemplatesResult,
+  GetInvoiceTemplateResult,
+  PreviewInvoiceTemplateExtractionInput,
+  PreviewInvoiceTemplateExtractionResult,
+  SaveInvoiceAsTemplateInput,
+  SaveInvoiceAsTemplateResult,
   PingResult,
   RenewInvoiceLinkInput,
   RenewInvoiceLinkResult,
@@ -41,6 +48,10 @@ export interface InvomptService {
   ping(): Promise<PingResult>
   createInvoice(input: CreateInvoiceInput): Promise<InvoiceResult>
   listInvoices(params?: ListInvoicesParams): Promise<ListInvoicesResult>
+  listInvoiceTemplates(params?: ListInvoiceTemplatesParams): Promise<ListInvoiceTemplatesResult>
+  getInvoiceTemplate(id: string, version?: number): Promise<GetInvoiceTemplateResult>
+  previewInvoiceTemplateExtraction(input: PreviewInvoiceTemplateExtractionInput): Promise<PreviewInvoiceTemplateExtractionResult>
+  saveInvoiceAsTemplate(input: SaveInvoiceAsTemplateInput): Promise<SaveInvoiceAsTemplateResult>
   getInvoice(id: string): Promise<InvoiceDetailResult>
   updateInvoice(id: string, input: UpdateInvoiceInput): Promise<UpdateInvoiceResult>
   archiveInvoice(id: string, input: ArchiveInvoiceInput): Promise<ArchiveInvoiceResult>

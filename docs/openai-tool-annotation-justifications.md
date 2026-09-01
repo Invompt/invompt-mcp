@@ -20,5 +20,9 @@ These values classify actual effects according to the current OpenAI plugin revi
 | `create_client` | No | No | No | Creates a saved client inside the private workspace without publishing or replacing existing data. |
 | `update_client` | No | No | Yes | Overwrites supplied saved-client fields; version protection prevents stale writes, but no revision rollback is exposed. |
 | `archive_client` | No | No | Yes | Soft-deletes a saved client from active private use. Historical invoice snapshots remain, but this MCP surface exposes no client restore operation. |
+| `list_invoice_templates` | Yes | No | No | Lists safe reusable-template metadata in the private workspace without changing state. |
+| `get_invoice_template` | Yes | No | No | Retrieves one immutable validated semantic template preset without changing state. |
+| `preview_invoice_template_extraction` | Yes | No | No | Projects one immutable invoice revision into a checksum-bound safe preset without changing state. |
+| `save_invoice_as_template` | No | No | No | Creates a reusable semantic preset in the private workspace; it does not publish or overwrite invoice data. |
 
 Authoritative guidance: [OpenAI MCP server review requirements](https://developers.openai.com/plugins/deploy/app-review#review-and-approval-faqs).
