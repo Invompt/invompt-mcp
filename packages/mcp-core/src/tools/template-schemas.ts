@@ -9,29 +9,29 @@ export const templateIdSchema = z.uuid().describe('Company-owned template ID')
 export const templateVersionSchema = z.number().int().min(1).describe('Immutable template version')
 
 const safeDiscountSchema = z.union([
-  z.string().trim().min(1).max(100),
+  z.string().min(1),
   z.strictObject({
     type: z.enum(['percentage', 'fixed']),
-    value: z.number().finite().nonnegative(),
-    label: z.string().trim().min(1).max(200).optional(),
+    value: z.number().finite(),
+    label: z.string().optional(),
   }),
 ])
 
 const safeTaxSchema = z.union([
   z.strictObject({
-    label: z.string().trim().min(1).max(200),
-    rate: z.number().finite().nonnegative(),
+    label: z.string().min(1),
+    rate: z.number().finite(),
     inclusive: z.boolean().optional(),
   }),
   z.strictObject({
-    system: z.string().trim().min(1).max(100).optional(),
+    system: z.string().optional(),
     compound: z.boolean().optional(),
     inclusive: z.boolean().optional(),
     categories: z.array(
       z.strictObject({
-        id: z.string().trim().min(1).max(100),
-        label: z.string().trim().min(1).max(200),
-        rate: z.number().finite().nonnegative(),
+        id: z.string().min(1),
+        label: z.string().min(1),
+        rate: z.number().finite(),
         default: z.boolean().optional(),
         exempt: z.boolean().optional(),
         reverseCharge: z.boolean().optional(),
@@ -46,7 +46,7 @@ const safeDefaultDataSchema = z.strictObject({
   meta: z
     .strictObject({
       currency: z.string().trim().regex(/^[A-Za-z]{3}$/).optional(),
-      locale: z.string().trim().min(2).max(35).optional(),
+      locale: z.string().optional(),
       tax: safeTaxSchema.optional(),
     })
     .optional(),
@@ -59,12 +59,12 @@ const safeDefaultDataSchema = z.strictObject({
   items: z
     .array(
       z.strictObject({
-        description: z.string().trim().min(1).max(2000),
+        description: z.string().min(1),
         quantity: z.number().finite().positive(),
-        unit: z.string().trim().min(1).max(100).optional(),
+        unit: z.string().optional(),
         unitPrice: z.number().finite().nonnegative(),
         discount: safeDiscountSchema.optional(),
-        tax: safeTaxSchema.optional(),
+        taxCategory: z.string().optional(),
       }),
     )
     .optional(),

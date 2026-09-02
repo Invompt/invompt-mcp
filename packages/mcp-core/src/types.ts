@@ -121,7 +121,7 @@ export interface PreviewInvoiceTemplateExtractionInput {
   includeLineItems?: boolean
 }
 
-export interface InvoiceTemplateProjection extends Omit<InvoiceTemplateVersion, 'version' | 'createdAt'> {
+export interface InvoiceTemplateProjection extends Omit<InvoiceTemplateVersion, 'version' | 'createdAt' | 'schemaVersion'> {
   invoiceId: string
   invoiceVersion: number
   documentType: InvoiceTemplateDocumentType
