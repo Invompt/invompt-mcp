@@ -88,6 +88,40 @@ describe('reusable invoice template tools', () => {
     expect(getInvoiceTemplate).toHaveBeenCalledWith(TEMPLATE_ID, undefined)
   })
 
+  test('accepts canonical line items and preserves multi-rate tax categories', async () => {
+    const longDescription = 'Credit adjustment '.repeat(150)
+    const longTaxLabel = 'Zero-rated category '.repeat(12)
+    const getInvoiceTemplate = vi.fn().mockResolvedValue({
+      template: {
+        ...detail,
+        version: {
+          ...detail.version,
+          defaultData: {
+            meta: {
+              currency: 'USD',
+              tax: {
+                system: 'vat',
+                categories: [
+                  { id: 'standard', label: 'Standard VAT', rate: 20, default: true },
+                  { id: 'zero', label: longTaxLabel, rate: 0, exempt: true },
+                ],
+              },
+            },
+            items: [{ description: longDescription, quantity: 1, unitPrice: 50, taxCategory: 'zero' }],
+          },
+          lineItemPresetMode: 'explicit',
+        },
+      },
+    })
+    const { server, handlers, configs } = serverMock()
+    registerGetInvoiceTemplateTool(server, service({ getInvoiceTemplate }))
+
+    const outputSchema = configs.get_invoice_template.outputSchema as unknown as z.ZodType
+    expect(outputSchema.safeParse(await getInvoiceTemplate()).success).toBe(true)
+    await handlers.get_invoice_template({ templateId: TEMPLATE_ID })
+    expect(getInvoiceTemplate).toHaveBeenCalledWith(TEMPLATE_ID, undefined)
+  })
+
   test('defaults extraction line items to false and keeps projection markup empty', async () => {
     const previewInvoiceTemplateExtraction = vi.fn().mockResolvedValue({
       projection: {
@@ -110,6 +144,51 @@ describe('reusable invoice template tools', () => {
     registerPreviewInvoiceTemplateExtractionTool(server, service({ previewInvoiceTemplateExtraction }))
     await handlers.preview_invoice_template_extraction({ invoiceId: INVOICE_ID, version: 3 })
     expect(previewInvoiceTemplateExtraction).toHaveBeenCalledWith({ invoiceId: INVOICE_ID, version: 3, includeLineItems: false })
+  })
+
+  test('validates an explicit line-item projection with taxCategory', async () => {
+    const previewInvoiceTemplateExtraction = vi.fn().mockResolvedValue({
+      projection: {
+        invoiceId: INVOICE_ID,
+        invoiceVersion: 3,
+        documentType: 'credit_note',
+        html: '',
+        css: '',
+        defaultData: {
+          meta: {
+            currency: 'USD',
+            tax: {
+              system: 'vat',
+              categories: [
+                { id: 'standard', label: 'Standard VAT', rate: 20, default: true },
+                { id: 'zero', label: 'Zero-rated', rate: 0, exempt: true },
+              ],
+            },
+          },
+          items: [{ description: 'Credit', quantity: 1, unitPrice: 50, taxCategory: 'zero' }],
+        },
+        lineItemPresetMode: 'explicit',
+        assetManifest: [],
+        includedPaths: ['meta.tax', 'items'],
+        excludedPaths: [],
+        checksum: CHECKSUM,
+        canonicalBytes: 200,
+        compilerVersion: '1.0',
+      },
+    })
+    const { server, handlers, configs } = serverMock()
+    registerPreviewInvoiceTemplateExtractionTool(server, service({ previewInvoiceTemplateExtraction }))
+    const outputSchema = configs.preview_invoice_template_extraction.outputSchema as unknown as z.ZodType
+    const result = await previewInvoiceTemplateExtraction({ invoiceId: INVOICE_ID, version: 3, includeLineItems: true })
+    expect(outputSchema.safeParse(result).success).toBe(true)
+    expect(outputSchema.safeParse({
+      projection: {
+        ...result.projection,
+        defaultData: { items: [{ description: 'Invalid', quantity: 1, unitPrice: 10, tax: { label: 'VAT', rate: 20 } }] },
+      },
+    }).success).toBe(false)
+    await handlers.preview_invoice_template_extraction({ invoiceId: INVOICE_ID, version: 3, includeLineItems: true })
+    expect(previewInvoiceTemplateExtraction).toHaveBeenCalledWith({ invoiceId: INVOICE_ID, version: 3, includeLineItems: true })
   })
 
   test('saves only checksum-bound projections and preserves stable backend errors', async () => {
