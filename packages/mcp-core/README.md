@@ -1,9 +1,72 @@
 # @invompt/mcp-core
 
-Private workspace source for the transport-neutral Invompt MCP discovery contract. It accepts an `InvomptService` implementation and contains no credential lookup, endpoint selection, filesystem persistence, or private transport implementation. It remains in the public repository for review and tests, but it is not an npm publish target.
+`@invompt/mcp-core` composes the transport-neutral Invompt MCP contract. It accepts an
+`InvomptService` implementation and registers the server surface; it does not choose an
+endpoint, read credentials, persist state, or implement a transport.
 
-The core exposes exactly 20 operational tools, including safe reusable invoice-template listing, reading, extraction preview, and save-from-invoice operations. Template extraction stores only validated semantic defaults with empty HTML/CSS; it never accepts arbitrary layout blobs or free-form invoice content. `create_account_claim_link` replaces the retired account-claim placeholder with an input-free Guest-account-only mutation that returns a short-lived browser URL. Transport mode is not account type: hosted OAuth Guest and legacy credential Guest may both invoke it, and the backend is authoritative for eligibility.
+This workspace-only package is included in the public repository for source review and contract
+tests. It is not an npm publish target.
 
-Authentication is adapter-owned: this core does not select or enforce Guest versus account mode.
-The active backend enforces account eligibility. On explicit invocation the core calls the
-service once, regardless of transport, and formats backend errors normally.
+## Purpose
+
+The package separates MCP protocol composition from adapters such as an HTTP client, a private
+server integration, or a test fake. The service interface is the dependency boundary:
+
+```ts
+import { createMcpServer } from '@invompt/mcp-core'
+
+const server = createMcpServer(service, '0.11.4')
+```
+
+`service` must implement the exported `InvomptService` interface. The `version` argument becomes
+the MCP server version reported during initialization.
+
+## Contract surface
+
+The server registers 20 operational tools:
+
+- Invoice lifecycle: create, list, read, update, archive, unarchive, and renew hosted links.
+- Invoice templates: list, read, preview extraction, and save from an invoice.
+- Clients: list, read, create, update, and archive.
+- Workspace operations: ping, read or update settings, and create an explicit account-claim link.
+
+It also registers the `getting-started` and `invoml-spec` resources and the
+`draft_invoice_invoml` prompt. Tool names and fixture expectations are exported by
+`@invompt/mcp-testkit`.
+
+## Integration
+
+Implement the service methods in an adapter, then pass the adapter to `createMcpServer`:
+
+```ts
+import { createMcpServer } from '@invompt/mcp-core'
+
+const mcp = createMcpServer(adapter, '0.11.4')
+// Connect mcp to the adapter's chosen MCP transport.
+```
+
+Authentication and account eligibility remain adapter and backend responsibilities. The core
+calls an account-claim operation once when the host explicitly invokes it and formats the result;
+it does not accept credentials or account identifiers for that operation.
+
+## Design boundaries
+
+- InvoML validation, calculation, persistence, and hosted URLs belong to the service implementation.
+- Credential lookup, OAuth, Guest storage, endpoint selection, and transport lifecycle belong to an adapter.
+- Template projections contain validated semantic defaults; reusable HTML and CSS are empty by contract.
+- Create and mutation inputs use stable idempotency keys where the type contract requires them.
+
+## Development
+
+From the repository root, use Node.js 22.22.0 and npm 11.11.0:
+
+```sh
+npm ci
+npm run build --workspace=@invompt/mcp-core
+npm run typecheck --workspace=@invompt/mcp-core
+npm run test --workspace=@invompt/mcp-core
+```
+
+## License
+
+[`MIT`](LICENSE)

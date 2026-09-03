@@ -1,74 +1,91 @@
+<div align="center">
+
 # Invompt MCP
 
-Invompt MCP is a pre-1.0, local-beta package for onboarding Claude Code and Codex to Invompt invoice tools. It provides portable skills, a setup CLI, and a Guest stdio bridge; Invompt retains invoice rules, persistence, rendering, and hosted document links.
+  <strong>Invoice tools for the AI hosts you already use.</strong>
+  <br />
+  Create, review, and manage Invompt invoices through an MCP connection.
+</div>
 
-> This source prepares `invompt-mcp@0.11.4` for the `next` channel only. It makes no release, production, registry-availability, or fresh-host compatibility claim. Verify external state independently before relying on any registry artifact.
+<p align="center">
+  <a href="packages/invompt-mcp/README.md">CLI reference</a>
+  |
+  <a href="packages/mcp-core/README.md">MCP contract</a>
+  |
+  <a href="https://mcp.invompt.com/mcp">Hosted MCP endpoint</a>
+</p>
 
-## Supported local-beta hosts
+Invompt MCP is the local-beta distribution for connecting Claude Code or Codex to Invompt. It
+provides a small setup CLI, portable host skills, and a Guest stdio bridge. Invoice rules,
+calculation, persistence, and hosted document links remain part of the Invompt service.
 
-Local beta is scoped to macOS Claude Code and Codex. Their package manifests expose skills only; they do not install a static MCP transport because the user must choose the connection mode first.
+## What it does
 
-| Mode | Transport | Use when |
-|---|---|---|
-| Guest | Local stdio bridge to `https://mcp.invompt.com/mcp` | You explicitly choose a server-issued pseudonymous local credential. |
-| OAuth | Native HTTPS MCP at `https://mcp.invompt.com/mcp` | You explicitly choose browser sign-in. |
+- Turns natural-language or structured requests into invoices, quotes, estimates, and pro formas.
+- Lists and updates invoices and saved clients through the MCP contract.
+- Supports two deliberate connection modes: a local Guest bridge or hosted OAuth over HTTPS.
+- Keeps local setup state separate from the global hosted consumer.
 
-The local loopback development endpoint is `http://localhost:3101/mcp`; it is for development, not a public host-default configuration. Gemini CLI and Qwen Code files are templates only and are not supported local-beta runtimes.
+This repository is a pre-1.0 local-beta package. It is not the global hosted consumer. The global
+consumer uses the `invompt` connection name and hosted OAuth; this package uses the isolated
+`invompt-local-beta` identity. ChatGPT web connects to the hosted endpoint with OAuth and does not
+run this local CLI.
 
-ChatGPT web is separate: it is remote OAuth-only at `https://mcp.invompt.com/mcp`. It must never run local status/setup, use a Guest bridge, or inspect local device state.
+## Quick start
 
-This repository's CLI is a separate local-beta distribution. It configures only `invompt-local-beta`; setup, logout, reset, and reconciliation never remove or modify `invompt`. The Workspace Hub global consumer remains one hosted HTTPS OAuth-only `invompt` provider.
+1. Choose a host and connection mode, then run the matching setup command. Use OAuth for a browser
+   sign-in, or Guest for a server-issued pseudonymous local credential.
 
-## Setup
+   ```sh
+   npx --yes invompt-mcp@next setup --host codex --mode oauth
+   # Replace codex with claude-code, or oauth with guest.
+   ```
 
-Before an Invompt MCP call, the onboarding skill checks redacted status. If the mode is undecided, it asks exactly whether you want **Guest** or **OAuth** in the current conversation language and waits for your explicit choice.
+2. Restart the selected host so it discovers `invompt-local-beta`.
 
-For Codex, run one chosen command:
+3. Ask the host to create or review an Invompt invoice.
 
-```sh
-npx --yes invompt-mcp@0.11.4 setup --host codex --mode guest
-npx --yes invompt-mcp@0.11.4 setup --host codex --mode oauth
-```
+## Connection modes
 
-For Claude Code, use the same pinned package CLI rather than assuming an installed-cache path:
+| Mode | What it uses | Choose it when |
+| --- | --- | --- |
+| Guest | Local stdio bridge | You want a server-issued pseudonymous credential. |
+| OAuth | Hosted HTTPS MCP endpoint | You want browser-based sign-in. |
 
-```sh
-npx --yes invompt-mcp@0.11.4 setup --host claude-code --mode guest
-npx --yes invompt-mcp@0.11.4 setup --host claude-code --mode oauth
-```
+The bridge does not open a listener or implement invoice business logic. It forwards JSON-RPC only
+through the selected connection and rejects HTTP redirects.
 
-Use `status --json` through the same current-host command to inspect redacted state. There is no postinstall prompt and no credential in a manifest or host configuration.
+## Security
 
-The resulting MCP server is named `invompt-local-beta` on both hosts. Keep the normal global `invompt` provider separate and OAuth-only.
+Guest credentials are stored in the macOS Keychain by default. The optional file fallback requires
+an explicit flag and uses restricted local permissions. The CLI does not place credentials in a
+plugin manifest or host configuration, derive a hardware fingerprint, or collect serial and MAC
+data. Never paste credentials, tokens, or real invoice content into a public issue.
 
-Plugin and skill discovery use the same isolated namespace: plugin `invompt-local-beta`, with skills `invompt-local-beta-onboarding` and `invompt-local-beta-invoice`. The package does not discover as global plugin `invompt` or as global skill `invompt-invoice`, `invompt-export`, or `invompt-health`.
+Report a vulnerability through [GitHub private vulnerability reporting][security-report].
 
-Guest is Keychain-first on macOS (`com.invompt.invompt-mcp` / `guest-credential`). Only when you explicitly permit the fallback may setup add `--allow-file-fallback`; the fallback is restricted-permission plaintext at `~/.invompt/guest-credential` (mode `0600`). Non-secret local state is `~/.invompt/auth-state.json` (mode `0600` in a `0700` directory).
+[security-report]: https://github.com/Invompt/invompt-mcp/security/advisories/new
 
-Switching Guest to OAuth leaves the Guest secret dormant. It is never auto-converted, claimed, or merged into an account. Use `logout --host codex` or `logout --host claude-code` for a deliberate host logout. `reset --yes` removes local state and attempts Guest revocation; if revocation cannot reach the service, copied credentials may remain valid and the CLI reports that warning.
+## Resources
 
-Transport mode is separate from account type: hosted OAuth Guest and legacy credential Guest are both Guest principals. An explicit account-claim request calls the claim tool once; the backend decides eligibility. After an OAuth Guest claim, the grant remains connected and revalidates registered state; after a legacy Guest claim, the old credential fails with `GUEST_ACCOUNT_CLAIMED`.
+- [CLI and onboarding reference](packages/invompt-mcp/README.md)
+- [Transport-neutral MCP contract](packages/mcp-core/README.md)
+- [Contract fixtures and service fake](packages/mcp-testkit/README.md)
+- [Model Context Protocol documentation](https://modelcontextprotocol.io/)
+- [Hosted Invompt MCP endpoint](https://mcp.invompt.com/mcp)
 
-## Migration and rollback
+## Development
 
-`0.11.4` adds safe reusable invoice-template listing, reading, extraction preview, and explicit save-from-invoice tools. Template projections contain only validated semantic defaults with empty HTML/CSS; host-supplied layout blobs are not accepted. It does not migrate an existing global OAuth-only consumer. Select one local-beta mode deliberately. `--allow-file-fallback` is valid only with `setup --mode guest`, and unknown or duplicate flags are rejected. To roll back local-beta state, first run `logout --host …`; use `reset --yes` only when you also intend to remove local authentication state and attempt Guest revocation. Restore the Workspace Hub consumer through its own OAuth-only installer, not this CLI.
-
-## Failures and privacy
-
-- Offline/network failures and `5xx` responses are temporary failures; do not loop or silently retry credential issuance.
-- `401` means a Guest credential is invalid or revoked; use deliberate reset/recovery before another setup attempt, especially when the recorded secret backend is unavailable.
-- `429` respects `Retry-After`; do not retry before it.
-- A host CLI error leaves setup needing reconciliation; do not claim the host is configured.
-
-Invompt MCP derives no hardware or device fingerprint and collects no serial data or MAC addresses. The server-issued Guest credential is the sole pseudonymous local identity; it is stored in Keychain by default and is never used to derive device identity. It has no runtime dependencies after bundling, opens no listener, and does not execute invoice business logic. It forwards JSON-RPC only through the explicitly selected transport and rejects HTTP redirects.
-
-## Development verification
-
-Use Node.js 22.22.0 and npm 11.11.0 for the canonical package gates:
+Use Node.js 22.22.0 and npm 11.11.0, as declared by the repository. From the repository root:
 
 ```sh
 npm ci
 npm run check
 ```
 
-The checks build, typecheck, lint, test, scan source and packed artifacts for secrets/privacy regressions, verify the exact package allowlist, and test an isolated tarball-only consumer. Local checks do not prove an external release or fresh-host installation.
+The check builds the workspaces, runs typechecking, linting, tests, privacy scanning, and package
+verification. It is a source-quality check; it does not certify a registry artifact or host setup.
+
+## License
+
+[MIT](LICENSE)

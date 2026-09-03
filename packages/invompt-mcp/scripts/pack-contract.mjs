@@ -275,7 +275,7 @@ export function verifyPackContract({
   }
 
   const readme = readText('README.md')
-  assert(readme.includes('public-development, pre-1.0'), 'packaged README states the public-development pre-1.0 status')
+  assert(readme.includes('local-beta onboarding CLI'), 'packaged README identifies the local-beta onboarding purpose')
   const coreReadme = readText('../mcp-core/README.md')
   assert(
     !coreReadme.includes('input-free Guest-only mutation') &&
@@ -283,28 +283,24 @@ export function verifyPackContract({
     'mcp-core README excludes stale Guest-only and OAuth-rejection claims',
   )
   assert(
-    coreReadme.includes('Guest-account-only') &&
-      coreReadme.includes('hosted OAuth Guest') &&
-      coreReadme.includes('backend is authoritative for eligibility'),
-    'mcp-core README documents hosted OAuth Guest and backend-authoritative eligibility',
+    coreReadme.includes('Authentication and account eligibility remain adapter and backend responsibilities'),
+    'mcp-core README keeps authentication and eligibility at the adapter and backend boundary',
   )
   assert(readme.includes('https://mcp.invompt.com/mcp'), 'packaged README records the hosted MCP endpoint')
-  assert(readme.includes('http://localhost:3101/mcp'), 'packaged README records the loopback development endpoint')
   assert(
-    readme.includes('does not contain invoice business logic') && readme.includes('no runtime dependencies'),
-    'packaged README limits bridge responsibility and dependencies',
+    readme.includes('does not contain invoice business logic, persistence, or an HTTP listener'),
+    'packaged README limits bridge responsibility',
   )
-  assert(readme.includes('npx --yes invompt-mcp@0.11.4 setup --host codex'), 'packaged README pins Codex setup to 0.11.4')
-  assert(readme.includes('npx --yes invompt-mcp@0.11.4 setup --host claude-code'), 'packaged README pins Claude setup to 0.11.4')
+  assert(readme.includes('npx --yes invompt-mcp@next setup --host codex --mode oauth'), 'packaged README uses the published prerelease channel')
+  assert(readme.includes('Replace `codex` with `claude-code`'), 'packaged README explains the alternate supported host')
   assert(readme.includes('--allow-file-fallback') && readme.includes('auth-state.json'), 'packaged README documents explicit fallback and state paths')
-  assert(readme.includes('no postinstall prompt'), 'packaged README states that setup has no postinstall prompt')
-  assert(readme.includes('ChatGPT web is separate and remote OAuth-only'), 'packaged README distinguishes ChatGPT remote OAuth')
+  assert(/ChatGPT web is a separate OAuth-only\s+consumer/.test(readme), 'packaged README distinguishes ChatGPT hosted OAuth')
   assert(
-    readme.includes('configures only `invompt-local-beta`') &&
-      readme.includes('never remove or modify `invompt`'),
+    /configures only the\s+`invompt-local-beta`/.test(readme) &&
+      /does not own the global `invompt-invoice`/.test(readme),
     'packaged README separates local beta from the global OAuth consumer',
   )
-  assert(readme.includes('no release, production, registry-availability'), 'packaged README makes no unverified release claim')
+  assert(!readme.includes('candidate release') && !readme.includes('registry-availability'), 'packaged README excludes internal release narration')
   assert(readText('THIRD_PARTY_NOTICES.md').includes('@modelcontextprotocol/sdk@1.30.0'), 'packed package includes deterministic bundled third-party notices')
 
   const gettingStartedSource = readText('../mcp-core/src/resources/getting-started.ts')

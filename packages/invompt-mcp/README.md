@@ -1,75 +1,86 @@
-# Invompt MCP
+# invompt-mcp
 
-`invompt-mcp` is a self-contained local-beta onboarding CLI and Guest stdio bridge for Invompt MCP. It ships portable skills for Claude Code and Codex; it does not contain invoice business logic, a database client, REST fallback, or an HTTP listener.
+`invompt-mcp` is the local-beta onboarding CLI and Guest stdio bridge for Invompt MCP. It ships
+portable skills for Claude Code and Codex and keeps host setup separate from the global `invompt`
+consumer. It does not contain invoice business logic, persistence, or an HTTP listener.
 
-> **Prerelease:** this public-development, pre-1.0 source declares `0.11.4` for `next`. It makes no release, production, registry-availability, or fresh-host compatibility claim. Verify live registry state independently before relying on a package version.
+The host integration targets Claude Code and Codex on macOS. The hosted MCP endpoint is
+[`https://mcp.invompt.com/mcp`](https://mcp.invompt.com/mcp). ChatGPT web is a separate OAuth-only
+consumer of that endpoint and does not run this CLI.
 
-## Local-beta scope
+## Overview
 
-Supported local-beta hosts are macOS Claude Code and Codex. Their plugin manifests discover skills only; they deliberately contain no static `mcpServers` configuration because Guest and OAuth need different transports. Gemini CLI and Qwen Code manifest files are template-not-supported assets, not supported runtimes.
+Use this package when you want a local command to configure and inspect an Invompt MCP connection.
+The setup flow keeps Guest and OAuth modes explicit, and status output stays redacted.
 
-| Mode | Transport | Endpoint |
-|---|---|---|
-| Guest | stdio bridge | `https://mcp.invompt.com/mcp` |
-| OAuth | native HTTPS MCP | `https://mcp.invompt.com/mcp` |
+## Install
 
-`http://localhost:3101/mcp` is the loopback development endpoint. It is not a public host-default configuration. ChatGPT web is separate and remote OAuth-only: it connects to the hosted endpoint and must never run local status/setup, use Guest mode, or inspect local device state.
-
-This is a separate CLI/local-beta distribution. It configures only `invompt-local-beta`; setup, logout, reset, and reconciliation never remove or modify `invompt`. The Workspace Hub global consumer remains a single hosted HTTPS OAuth-only `invompt` provider.
-
-## Explicit setup
-
-On first local-beta Invompt use, `invompt-local-beta-onboarding` checks redacted status. When mode is undecided it asks, in the current conversation language, exactly whether the user wants **Guest** or **OAuth**, gives a brief explanation, and waits for an explicit choice.
-
-For Codex, use the exact pinned CLI command after that choice:
+For the published prerelease channel, run the CLI without adding a global install:
 
 ```sh
-npx --yes invompt-mcp@0.11.4 setup --host codex --mode guest
-npx --yes invompt-mcp@0.11.4 setup --host codex --mode oauth
+npx --yes invompt-mcp@next setup --host codex --mode oauth
 ```
 
-For Claude Code, use the same pinned package CLI rather than assuming an installed-cache path:
+Replace `codex` with `claude-code`, or `oauth` with `guest`. The CLI configures only the
+`invompt-local-beta` MCP identity. Check the registry metadata before relying on a feature that is
+newer than the published channel.
 
-```sh
-npx --yes invompt-mcp@0.11.4 setup --host claude-code --mode guest
-npx --yes invompt-mcp@0.11.4 setup --host claude-code --mode oauth
+## Commands
+
+```text
+invompt-mcp serve --host claude-code|codex
+invompt-mcp setup --mode guest|oauth --host claude-code|codex [--allow-file-fallback]
+invompt-mcp status [--json]
+invompt-mcp logout --host claude-code|codex
+invompt-mcp reset --yes
 ```
 
-Use the equivalent `status --json` command to inspect only redacted mode, backend, and binding status. This package has no postinstall prompt. It never packages a credential or writes one to a manifest or host configuration.
+`serve` starts the Guest stdio bridge. `setup` selects Guest or OAuth and configures one host.
+`status` prints redacted local state. `logout` disconnects one host. `reset --yes` removes local
+authentication state and attempts Guest revocation.
 
-Both hosts name this package's connection `invompt-local-beta`. The normal global `invompt` connection remains separate and OAuth-only.
+## Connection modes
 
-The packaged plugin identity is also `invompt-local-beta`; its only skills are `invompt-local-beta-onboarding` and `invompt-local-beta-invoice`. It does not own or package the global `invompt-invoice`, `invompt-export`, or `invompt-health` discovery names.
+Guest mode uses a server-issued pseudonymous credential and the stdio bridge. OAuth mode configures
+the host for the hosted HTTPS MCP endpoint and browser sign-in. The modes are intentionally
+separate: selecting OAuth leaves any Guest credential dormant, and selecting Guest never converts
+or claims it.
 
-## State and switching
+The packaged plugin identity is `invompt-local-beta`, with onboarding and invoice skills under the
+same namespace. It does not own the global `invompt-invoice`, `invompt-export`, or `invompt-health`
+discovery names.
 
-Guest credentials use macOS Keychain first: service `com.invompt.invompt-mcp`, account `guest-credential`. `--allow-file-fallback` is required before the restricted-permission plaintext fallback path `~/.invompt/guest-credential` (permissions `0600`) may be used. Non-secret state is `~/.invompt/auth-state.json` (permissions `0600` in directory `0700`).
+## State and security
 
-Guest to OAuth switching leaves the Guest credential dormant. It never auto-converts or claims a Guest workspace. `logout --host codex` or `logout --host claude-code` removes the selected host configuration. `reset --yes` removes local state and attempts online Guest revocation; an offline revocation failure means copied credentials may remain valid and is reported as a warning.
+Guest credentials use the macOS Keychain service `com.invompt.invompt-mcp` and account
+`guest-credential` by default. `--allow-file-fallback` is required before the restricted file
+fallback at `~/.invompt/guest-credential` is used. Non-secret state is stored at
+`~/.invompt/auth-state.json`. The CLI never puts credentials in a manifest or host configuration,
+derives a hardware fingerprint, or follows HTTP redirects.
 
-Transport mode is separate from account type: hosted OAuth Guest and legacy credential Guest are both Guest principals. An explicit account-claim request calls the claim tool once; the backend decides eligibility. After an OAuth Guest claim, the OAuth grant remains connected and subsequent operations revalidate registered state. After a legacy Guest claim, the old credential fails with `GUEST_ACCOUNT_CLAIMED`.
-
-## Migration and rollback
-
-`0.11.4` adds safe reusable invoice-template listing, reading, extraction preview, and explicit save-from-invoice tools. Template projections contain only validated semantic defaults with empty HTML/CSS; host-supplied layout blobs are not accepted. It does not migrate the Workspace Hub global OAuth consumer. Choose one local-beta mode. `--allow-file-fallback` is accepted only for Guest setup; unknown and duplicate flags fail closed. Roll back local-beta state with `logout --host …`, then use `reset --yes` only when removing local state and attempting Guest revocation. Restore the global consumer through its OAuth-only installer, not this package.
-
-## Error handling and privacy
-
-Offline/network failures and `5xx` responses are temporary: do not loop or silently retry credential issuance. A `401` Guest credential is invalid or revoked; use deliberate reset/recovery before another setup attempt, especially when the recorded secret backend is unavailable. A `429` must honor `Retry-After`. A host CLI error means setup needs reconciliation, not that the host is configured.
-
-The package derives no hardware or device fingerprint and collects no serial data or MAC addresses. The server-issued Guest credential is the sole pseudonymous local identity; it is stored in Keychain by default and is never used to derive device identity. It bundles with no runtime dependencies, rejects redirects, and forwards JSON-RPC only for the selected connection mode.
+If a host command fails, setup records a reconciliation state and reports the error. A `401` means
+that the Guest credential is invalid or revoked; a `429` must honor `Retry-After`. Do not retry
+credential issuance silently or include credentials, tokens, or real invoice content in issues.
 
 ## Development
 
-Use Node 22.22.0 and npm 11.11.0:
+Use Node.js 22.22.0 and npm 11.11.0:
 
 ```sh
 npm ci
 npm run check
 ```
 
-`npm run check` builds, typechecks, lints, tests, scans source and packed artifacts, verifies the exact file allowlist, and checks an isolated tarball-only consumer. These local checks do not prove an external release or fresh-host verification.
+From the repository root, the focused package commands are:
+
+```sh
+npm run build --workspace=invompt-mcp
+npm run typecheck --workspace=invompt-mcp
+npm run lint --workspace=invompt-mcp
+npm run test --workspace=invompt-mcp
+npm run verify:pack --workspace=invompt-mcp
+```
 
 ## License
 
-[MIT](LICENSE)
+[`MIT`](LICENSE)

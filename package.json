@@ -12,7 +12,8 @@
     "typecheck": "npm run typecheck --workspace=@invompt/mcp-core && npm run typecheck --workspace=@invompt/mcp-testkit && npm run typecheck --workspace=invompt-mcp",
     "lint": "npm run lint --workspace=invompt-mcp",
     "test": "npm run test --workspace=@invompt/mcp-core && npm run test --workspace=invompt-mcp",
-    "check": "npm run build && npm run typecheck && npm run lint && npm run test && npm run privacy:scan && npm run verify:pack",
+    "check": "npm run build && npm run typecheck && npm run lint && npm run test && npm run readme:check && npm run privacy:scan && npm run verify:pack",
+    "readme:check": "node scripts/validate-public-readmes.mjs",
     "verify:pack": "npm run verify:pack --workspace=invompt-mcp",
     "privacy:scan": "node scripts/privacy-secret-scan.mjs --source",
     "prepublishOnly": "npm run check"

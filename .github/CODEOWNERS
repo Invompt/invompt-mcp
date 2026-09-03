@@ -1,3 +1,10 @@
 # Repository ownership is assigned to the verified organization administrator.
 * @4riel
 /.github/ @4riel
+
+# Public documentation and its policy checks have explicit ownership.
+/README.md @4riel
+/packages/*/README.md @4riel
+/.github/CODEOWNERS @4riel
+/.github/workflows/public-readme-policy.yml @4riel
+/scripts/validate-public-readmes.mjs @4riel
