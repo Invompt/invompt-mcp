@@ -1,6 +1,6 @@
 {
   "name": "@invompt/mcp-core",
-  "version": "0.11.4",
+  "version": "0.11.5",
   "private": true,
   "description": "Transport-independent Invompt MCP contract composition",
   "type": "module",
