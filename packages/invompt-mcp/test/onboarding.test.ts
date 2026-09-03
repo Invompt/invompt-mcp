@@ -162,7 +162,7 @@ describe('macOS beta onboarding', () => {
   })
 
   test('has exact host commands and keeps Guest credentials out of them', () => {
-    expect(hostCommands('codex', 'guest', '0.11.4')[1]).toEqual([
+    expect(hostCommands('codex', 'guest', '0.11.5')[1]).toEqual([
       'codex',
       'mcp',
       'add',
@@ -170,27 +170,27 @@ describe('macOS beta onboarding', () => {
       '--',
       'npx',
       '--yes',
-      'invompt-mcp@0.11.4',
+      'invompt-mcp@0.11.5',
       'serve',
       '--host',
       'codex',
     ])
-    expect(hostCommands('claude-code', 'oauth', '0.11.4')[2]).toEqual(['claude', 'mcp', 'login', 'invompt-local-beta'])
-    expect(JSON.stringify(hostCommands('claude-code', 'guest', '0.11.4'))).not.toContain(credential)
+    expect(hostCommands('claude-code', 'oauth', '0.11.5')[2]).toEqual(['claude', 'mcp', 'login', 'invompt-local-beta'])
+    expect(JSON.stringify(hostCommands('claude-code', 'guest', '0.11.5'))).not.toContain(credential)
     for (const host of ['claude-code', 'codex'] as const) {
       for (const mode of ['guest', 'oauth'] as const) {
-        for (const command of hostCommands(host, mode, '0.11.4')) expect(command).not.toContain('invompt')
+        for (const command of hostCommands(host, mode, '0.11.5')) expect(command).not.toContain('invompt')
       }
     }
   })
 
   test('preserves the injected runner contract while configuring interactive OAuth login commands', async () => {
     const commands: string[] = []
-    await configureHost('claude-code', 'oauth', '0.11.4', async (command, args) => {
+    await configureHost('claude-code', 'oauth', '0.11.5', async (command, args) => {
       commands.push([command, ...args].join(' '))
       return { ok: true }
     })
-    await configureHost('codex', 'oauth', '0.11.4', async (command, args) => {
+    await configureHost('codex', 'oauth', '0.11.5', async (command, args) => {
       commands.push([command, ...args].join(' '))
       return { ok: true }
     })
@@ -595,7 +595,7 @@ describe('macOS beta onboarding', () => {
     })
     expect(host).toBe('codex')
     await expect(runCli(['serve'], { serve: async () => {} })).rejects.toThrow('--host must be claude-code or codex')
-    await configureHost('codex', 'guest', '0.11.4', async (_command, args) =>
+    await configureHost('codex', 'guest', '0.11.5', async (_command, args) =>
       args[1] === 'remove' ? { ok: false, stderr: 'MCP server invompt-local-beta not found' } : { ok: true },
     )
     await removeHost('claude-code', async () => ({ ok: false, stderr: 'No MCP server named invompt-local-beta' }))
@@ -610,7 +610,7 @@ describe('macOS beta onboarding', () => {
     ).rejects.toThrow('Unable to remove')
     const attempted: string[] = []
     await expect(
-      configureHost('claude-code', 'guest', '0.11.4', async (command, args) => {
+      configureHost('claude-code', 'guest', '0.11.5', async (command, args) => {
         attempted.push([command, ...args].join(' '))
         return { ok: false, stderr: 'permission denied' }
       }),
