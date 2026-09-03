@@ -955,7 +955,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ~~~
 
-## fast-uri@3.1.5 — BSD-3-Clause
+## fast-uri@3.1.7 — BSD-3-Clause
 
 Locked path: `node_modules/fast-uri`
 
