@@ -8,6 +8,7 @@ import { INVOML_SPEC_URI } from '../resources/invoml-spec.js'
 import { TEMPLATE_IDS } from '../types.js'
 import {
   canonicalInvomlSchema,
+  createInvoiceDocumentTypeSchema,
   idempotencyKeySchema,
   structuredInvomlSchema,
 } from './client-schemas.js'
@@ -33,9 +34,13 @@ const createInvoiceInputSchema = z
     'Provide exactly one input form: document as a structured InvoML object, or invoml as legacy serialized JSON.',
   )
 
+const structuredInputFidelityGuidance =
+  'document is strict and minimal: pro forma uses documentType quote; meta.tax, discounts, payment, paymentAdvice, sections, style, items[].unit, items[].discount, and items[].taxCategory are rejected. Use invoml for full-fidelity InvoML.'
+
 const createInvoiceOutputSchema = {
   invoiceId: z.string(),
   invoiceNumber: z.string().min(1),
+  documentType: createInvoiceDocumentTypeSchema,
   status: z.string().min(1),
   total: z.number().nullable(),
   currency: z.string().min(3),
@@ -77,7 +82,15 @@ function normalizeStructuredDocument(document: unknown): string {
   const parsed = structuredInvomlSchema.safeParse(document)
   if (!parsed.success) {
     const details = parsed.error.issues
-      .map((issue) => `${structuredIssuePath(issue.path as (string | number)[])}: ${issue.message}`)
+      .flatMap((issue) => {
+        const path = structuredIssuePath(issue.path as (string | number)[])
+        if (issue.code === 'unrecognized_keys') {
+          return issue.keys.map(
+            (key) => `${path ? `${path}.` : ''}${key}: unsupported in document; use invoml for full-fidelity InvoML`,
+          )
+        }
+        return `${path || 'document'}: ${issue.message}`
+      })
       .join('; ')
     throw new InvomptApiError(`Invalid structured InvoML: ${details}`, 'INVALID_INVOML', 400)
   }
@@ -165,12 +178,35 @@ function authoredInvoiceNumber(document: Record<string, unknown>): string | null
   return typeof number === 'string' ? number : null
 }
 
+type CreateInvoiceDocumentType = z.infer<typeof createInvoiceDocumentTypeSchema>
+
+function authoredDocumentType(document: Record<string, unknown>): CreateInvoiceDocumentType {
+  const meta = document.meta
+  const value =
+    meta !== null && !Array.isArray(meta) && typeof meta === 'object'
+      ? (meta as Record<string, unknown>).documentType
+      : undefined
+  const parsed = createInvoiceDocumentTypeSchema.safeParse(value)
+  if (!parsed.success) {
+    throw new InvomptApiError(
+      'Invalid InvoML: meta.documentType must be invoice, quote, estimate, receipt, or credit_note. Represent a pro forma as quote.',
+      'INVALID_INVOML',
+      400,
+    )
+  }
+  return parsed.data
+}
+
+function documentTypeLabel(documentType: CreateInvoiceDocumentType): string {
+  return documentType === 'credit_note' ? 'credit note' : documentType
+}
+
 export function registerCreateInvoiceTool(server: McpServer, client: InvomptService): void {
   server.registerTool(
     'create_invoice',
     {
       title: 'Create Invoice',
-      description: `${STRUCTURED_INVOML_GUIDANCE} Create and host an Invompt invoice, quote, estimate, or pro forma. For a named recipient, search list_clients first: auto-select only one exact unique match, ask which client for multiple matches, or ask once whether to save+assign or use one-off data when none. Never silently save a client. Recipient and issuer identity are optional. ${ISSUER_IDENTITY_INSTRUCTION} A clientId assigns the saved client and builds the recipient snapshot without private notes. Read ${INVOML_SPEC_URI} first.`,
+      description: `${STRUCTURED_INVOML_GUIDANCE} ${structuredInputFidelityGuidance} Create and host an Invompt invoice, quote, estimate, or pro forma. For a named recipient, search list_clients first: auto-select only one exact unique match, ask which client for multiple matches, or ask once whether to save+assign or use one-off data when none. Never silently save a client. Recipient and issuer identity are optional. ${ISSUER_IDENTITY_INSTRUCTION} A clientId assigns the saved client and builds the recipient snapshot without private notes. Read ${INVOML_SPEC_URI} first.`,
       inputSchema: createInvoiceInputSchema,
       outputSchema: createInvoiceOutputSchema,
       annotations: {
@@ -188,6 +224,8 @@ export function registerCreateInvoiceTool(server: McpServer, client: InvomptServ
         const serializedInvoml = resolveCreateInvoiceContent({ invoml, document })
         const authoredDocument = parseInvomlJsonObject(serializedInvoml)
         const requestedNumber = authoredInvoiceNumber(authoredDocument)
+        const documentType = authoredDocumentType(authoredDocument)
+        const documentLabel = documentTypeLabel(documentType)
         const result = await client.createInvoice({
           invoml: serializedInvoml,
           templateId,
@@ -196,7 +234,7 @@ export function registerCreateInvoiceTool(server: McpServer, client: InvomptServ
         })
         if (requestedNumber !== null && result.invoiceNumber !== requestedNumber) {
           throw new InvomptApiError(
-            `Created invoice ${result.invoiceId} as ${result.invoiceNumber}, but InvoML requested ${requestedNumber}. The invoice is not ready; inspect it before any follow-up action.`,
+            `Created ${documentLabel} ${result.invoiceId} as ${result.invoiceNumber}, but InvoML requested ${requestedNumber}. The document is not ready; inspect it before any follow-up action.`,
             'CANONICAL_INVOICE_NUMBER_MISMATCH',
             409,
           )
@@ -212,13 +250,14 @@ export function registerCreateInvoiceTool(server: McpServer, client: InvomptServ
           readBack.url !== result.url
         ) {
           throw new InvomptApiError(
-            `Created invoice ${result.invoiceId}, but canonical read-back did not match the creation response. The invoice is not ready; inspect it before any follow-up action.`,
+            `Created ${documentLabel} ${result.invoiceId}, but canonical read-back did not match the creation response. The document is not ready; inspect it before any follow-up action.`,
             'CANONICAL_INVOICE_READBACK_MISMATCH',
             409,
           )
         }
+        const structuredResult = { ...result, documentType }
         return {
-          structuredContent: result,
+          structuredContent: structuredResult,
           content: [
             {
               type: 'text' as const,
@@ -226,7 +265,7 @@ export function registerCreateInvoiceTool(server: McpServer, client: InvomptServ
                 result.guestName && result.guestReference
                   ? `${result.guestName}${result.guestReference ? ` (${result.guestReference})` : ''}'s `
                   : ''
-              }invoice ${result.invoiceNumber} (${result.invoiceId}), ${result.currency} ${result.total}: ${result.url}`,
+              }${documentLabel} ${result.invoiceNumber} (${result.invoiceId}), ${result.currency} ${result.total}: ${result.url}`,
             },
           ],
         }

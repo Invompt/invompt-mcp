@@ -13,6 +13,10 @@ export const canonicalInvomlSchema = z
 const structuredInvoMlString = (description: string, max = 2000) =>
   z.string().trim().min(1).max(max).describe(description)
 
+export const createInvoiceDocumentTypeSchema = z
+  .enum(['invoice', 'quote', 'estimate', 'receipt', 'credit_note'])
+  .describe('Supported document type. A pro forma is represented as quote.')
+
 export const structuredAddressSchema = z
   .strictObject({
     lines: z
@@ -58,9 +62,7 @@ export const structuredPartyInputSchema = z
 
 const structuredInvoiceMetaSchema = z
   .strictObject({
-    documentType: z
-      .enum(['invoice', 'quote', 'estimate', 'receipt', 'credit_note'])
-      .describe('Supported document type. A pro forma is represented as quote.'),
+    documentType: createInvoiceDocumentTypeSchema,
     number: structuredInvoMlString('Exact authored invoice/document number.', 200),
     issueDate: z.iso.date().describe('Issue date in YYYY-MM-DD format.'),
     dueDate: z.iso.date().optional().describe('Optional payment due date in YYYY-MM-DD format.'),
@@ -69,7 +71,7 @@ const structuredInvoiceMetaSchema = z
     currency: z.string().trim().regex(/^[A-Za-z]{3}$/).describe('Three-letter ISO currency code.'),
     locale: z.string().trim().min(2).max(35).optional().describe('Optional BCP 47 locale, such as en-US.'),
   })
-  .describe('Required document metadata.')
+  .describe('Required metadata. Tax is unsupported here; use invoml for full fidelity.')
 
 const structuredInvoiceItemSchema = z
   .strictObject({
@@ -77,7 +79,7 @@ const structuredInvoiceItemSchema = z
     quantity: z.number().finite().positive().describe('Positive item quantity.'),
     unitPrice: z.number().finite().nonnegative().describe('Non-negative price per unit. Do not use item.taxRate.'),
   })
-  .describe('Minimal billable line item. Totals are calculated by Invompt.')
+  .describe('Minimal line item. unit, discount, and taxCategory require invoml.')
 
 /**
  * Deliberately small, strict structured input for hosts that cannot reliably produce a serialized
@@ -93,7 +95,9 @@ export const structuredInvomlSchema = z
     notes: z.string().max(10000).optional().describe('Optional plain-text notes.'),
     prepaidAmount: z.number().finite().nonnegative().optional().describe('Optional amount already paid.'),
   })
-  .describe('Strict minimal structured InvoML document. Unknown fields are rejected.')
+  .describe(
+    'Strict minimal document. Unknown fields are rejected. Use invoml for tax, discounts, payment, paymentAdvice, sections, style, item unit, item discount, or item taxCategory.',
+  )
 
 export const clientIdSchema = z.uuid().describe('Company-owned saved client ID')
 export const idempotencyKeySchema = z
