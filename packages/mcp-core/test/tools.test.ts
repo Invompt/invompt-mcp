@@ -195,7 +195,7 @@ describe('capability preview URL schema', () => {
         name: 'create_invoice',
         register: (server: McpServer) =>
           registerCreateInvoiceTool(server, {} as Parameters<typeof registerCreateInvoiceTool>[1]),
-        output: (url: string) => ({ ...invoiceResult, url }),
+        output: (url: string) => ({ ...invoiceResult, documentType: 'invoice', url }),
       },
       {
         name: 'get_invoice',
@@ -355,8 +355,24 @@ describe('create_invoice tool', () => {
     }
     expect(config.description).toContain('exactly one: document')
     expect(config.description).toContain('address:{lines:[...]}')
-    expect(config.description).toContain('item.taxRate')
-    expect(config.description).toContain('taxCategory')
+    expect(config.description).toContain('full-fidelity InvoML')
+    expect(config.description).toContain('pro forma uses documentType quote')
+    expect(config.description).toContain('paymentAdvice')
+    expect(config.description).toContain('items[].taxCategory')
+  })
+
+  test('publishes documentType as a required structured output field', () => {
+    const { server } = makeServerMock()
+    const client = { createInvoice: vi.fn() } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+      outputSchema: ToolOutputSchema
+    }
+    const outputSchema = normalizeOutputSchema(config.outputSchema)
+
+    expect(outputSchema.safeParse({ ...invoiceResult, documentType: 'quote' }).success).toBe(true)
+    expect(outputSchema.safeParse(invoiceResult).success).toBe(false)
+    expect(outputSchema.safeParse({ ...invoiceResult, documentType: 'pro_forma' }).success).toBe(false)
   })
 
   test('calls client.createInvoice and returns structured content', async () => {
@@ -374,7 +390,7 @@ describe('create_invoice tool', () => {
       isError?: boolean
     }
     expect(result.isError).toBeUndefined()
-    expect(result.structuredContent).toEqual(invoiceResult)
+    expect(result.structuredContent).toEqual({ ...invoiceResult, documentType: 'invoice' })
     expect(client.createInvoice).toHaveBeenCalledWith({
       invoml: VALID_INVOML,
       templateId: undefined,
@@ -382,6 +398,48 @@ describe('create_invoice tool', () => {
       idempotencyKey: IDEMPOTENCY_KEY,
     })
     expect(client.getInvoice).toHaveBeenCalledWith(invoiceResult.invoiceId)
+  })
+
+  test.each([
+    ['invoice', 'invoice', 'invoice'],
+    ['quote', 'quote', 'quote'],
+    ['estimate', 'estimate', 'estimate'],
+    ['pro forma represented as quote', 'quote', 'quote'],
+  ] as const)('identifies a created %s as %s', async (_case, inputDocumentType, expectedDocumentType) => {
+    const documentNumber = `FAMILY-${expectedDocumentType.toUpperCase()}`
+    const familyResult = { ...invoiceResult, invoiceNumber: documentNumber }
+    const client = {
+      createInvoice: vi.fn().mockResolvedValue(familyResult),
+      getInvoice: vi.fn().mockResolvedValue({
+        invoice: { ...invoiceReadBack.invoice, invoiceNumber: documentNumber },
+      }),
+    } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    const { server, getHandler } = makeServerMock()
+    registerCreateInvoiceTool(server, client)
+    const invoml = JSON.stringify({
+      $invoml: '1.0',
+      meta: {
+        documentType: inputDocumentType,
+        number: documentNumber,
+        issueDate: '2030-01-15',
+        currency: 'USD',
+      },
+      items: [{ description: 'Document family sample', quantity: 1, unitPrice: 10 }],
+    })
+
+    const result = (await getHandler('create_invoice')({
+      invoml,
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })) as {
+      structuredContent: Record<string, unknown>
+      content: Array<{ text: string }>
+      isError?: boolean
+    }
+
+    expect(result.isError).toBeUndefined()
+    expect(result.structuredContent.documentType).toBe(expectedDocumentType)
+    expect(result.content[0]?.text).toContain(`Created ${expectedDocumentType} ${documentNumber}`)
+    if (expectedDocumentType !== 'invoice') expect(result.content[0]?.text).not.toContain('Created invoice')
   })
 
   test('fails closed when canonical read-back returns a different capability URL without exposing either token', async () => {
@@ -549,7 +607,7 @@ describe('create_invoice tool', () => {
     },
   )
 
-  test('delegates semantic validation for valid JSON objects to the API', async () => {
+  test('delegates remaining semantic validation for typed JSON objects to the API', async () => {
     const { server, getHandler } = makeServerMock()
     const createInvoice = vi
       .fn()
@@ -558,7 +616,7 @@ describe('create_invoice tool', () => {
     registerCreateInvoiceTool(server, client)
 
     const result = (await getHandler('create_invoice')({
-      invoml: '{}',
+      invoml: '{"$invoml":"1.0","meta":{"documentType":"invoice"}}',
       idempotencyKey: IDEMPOTENCY_KEY,
     })) as {
       isError: boolean
@@ -567,6 +625,26 @@ describe('create_invoice tool', () => {
 
     expect(parseToolErrorText(result).error.message).toBe('meta.currency: Currency is required.')
     expect(createInvoice).toHaveBeenCalledOnce()
+  })
+
+  test('rejects a missing or unsupported document type before creation', async () => {
+    const { server, getHandler } = makeServerMock()
+    const createInvoice = vi.fn().mockResolvedValue(invoiceResult)
+    const client = { createInvoice } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+
+    for (const documentType of [undefined, 'pro_forma']) {
+      const result = (await getHandler('create_invoice')({
+        invoml: JSON.stringify({ meta: { documentType } }),
+        idempotencyKey: IDEMPOTENCY_KEY,
+      })) as { isError: boolean; content: Array<{ text: string }> }
+
+      expect(parseToolErrorText(result).error).toEqual({
+        code: 'INVALID_INVOML',
+        message: expect.stringContaining('Represent a pro forma as quote'),
+      })
+    }
+    expect(createInvoice).not.toHaveBeenCalled()
   })
 })
 
@@ -591,6 +669,34 @@ describe('structured InvoML schema', () => {
       to: 'to' in invalid ? invalid.to : VALID_STRUCTURED_DOCUMENT.to,
     }
     expect(structuredInvomlSchema.safeParse(candidate).success).toBe(false)
+  })
+
+  test.each([
+    ['meta.tax', { meta: { ...VALID_STRUCTURED_DOCUMENT.meta, tax: { label: 'VAT', rate: 20 } } }],
+    ['discounts', { discounts: [{ type: 'percentage', value: 10 }] }],
+    ['payment', { payment: { method: 'other', content: 'Payment details' } }],
+    ['paymentAdvice', { paymentAdvice: { title: 'Payment advice' } }],
+    ['sections', { sections: { terms: { title: 'Terms', content: 'Example terms' } } }],
+    ['style', { style: { template: 'minimal' } }],
+    ['items[0].unit', { items: [{ ...VALID_STRUCTURED_DOCUMENT.items[0], unit: 'hours' }] }],
+    ['items[0].discount', { items: [{ ...VALID_STRUCTURED_DOCUMENT.items[0], discount: '10%' }] }],
+    ['items[0].taxCategory', { items: [{ ...VALID_STRUCTURED_DOCUMENT.items[0], taxCategory: 'standard' }] }],
+  ])('explicitly rejects advanced field %s without calling the API', async (path, patch) => {
+    const { server, getHandler } = makeServerMock()
+    const createInvoice = vi.fn().mockResolvedValue(invoiceResult)
+    const client = { createInvoice } as unknown as Parameters<typeof registerCreateInvoiceTool>[1]
+    registerCreateInvoiceTool(server, client)
+
+    const result = (await getHandler('create_invoice')({
+      document: { ...VALID_STRUCTURED_DOCUMENT, ...patch },
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })) as { isError: boolean; content: Array<{ text: string }> }
+
+    expect(parseToolErrorText(result).error).toEqual({
+      code: 'INVALID_INVOML',
+      message: expect.stringContaining(`${path}: unsupported in document; use invoml for full-fidelity InvoML`),
+    })
+    expect(createInvoice).not.toHaveBeenCalled()
   })
 })
 
@@ -1243,6 +1349,7 @@ test('presents guest invoice creation without commercial limit fields', async ()
   expect(result.content[0]?.text).toContain("Crazy Weasel (guest_abcdefghijklmnopqrstuv)'s invoice")
   expect(result.structuredContent).toEqual({
     ...invoiceResult,
+    documentType: 'invoice',
     guestName: 'Crazy Weasel',
     guestReference: 'guest_abcdefghijklmnopqrstuv',
   })

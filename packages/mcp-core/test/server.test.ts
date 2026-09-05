@@ -154,3 +154,26 @@ describe('update_invoice SDK output contract', () => {
     }
   })
 })
+
+describe('create_invoice SDK output contract', () => {
+  test('publishes the document family as a required structured field', async () => {
+    const { client, server } = await connectClient(serviceFake())
+
+    try {
+      const tool = (await client.listTools()).tools.find(({ name }) => name === 'create_invoice')
+      expect(tool?.outputSchema).toEqual(
+        expect.objectContaining({
+          properties: expect.objectContaining({
+            documentType: expect.objectContaining({
+              type: 'string',
+              enum: ['invoice', 'quote', 'estimate', 'receipt', 'credit_note'],
+            }),
+          }),
+          required: expect.arrayContaining(['documentType']),
+        }),
+      )
+    } finally {
+      await server.close()
+    }
+  })
+})
