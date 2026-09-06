@@ -1,6 +1,6 @@
-# Orca IDE worktree config
+# Orca IDE worktree config.
+# node_modules is intentionally NOT shared: this repo's Orca setup hook runs
+# `npm ci` per worktree, which would wipe a shared symlinked install.
+# If you switch to sharing, guard the setup hook with: [ -L node_modules ] || npm ci
 worktree:
-  sharedDirectories:
-    - node_modules
-    - packages/invompt-mcp/node_modules
-    - packages/mcp-core/node_modules
+  sharedDirectories: []
