@@ -6,3 +6,6 @@ coverage/
 .npmrc
 .DS_Store
 WORKSPACE_REGISTRY.json
+
+# Local agent state
+.claude/
