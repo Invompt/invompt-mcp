@@ -62,12 +62,15 @@ function parseToolErrorText(result: { content: Array<{ text: string }>; isError?
   }
 }
 
+const IDEMPOTENCY_KEY = 'send-invoice-email-test-key'
+
 const sentResult = {
   invoiceId: 'inv_1',
   invoiceNumber: 'INV-0001',
   recipientEmail: 'client@billing.example.invalid',
   sentAt: '2026-09-06T00:00:00.000Z',
   emailLogId: 'log_1',
+  replayed: false,
 }
 
 describe('send_invoice_email tool', () => {
@@ -78,7 +81,7 @@ describe('send_invoice_email tool', () => {
     expect(config.annotations).toEqual({
       readOnlyHint: false,
       destructiveHint: false,
-      idempotentHint: false,
+      idempotentHint: true,
       openWorldHint: true,
     })
   })
@@ -95,6 +98,7 @@ describe('send_invoice_email tool', () => {
       subject: 'Your invoice',
       message: 'Please find the invoice attached.',
       cc: ['second@billing.example.invalid'],
+      idempotencyKey: IDEMPOTENCY_KEY,
     })) as { structuredContent: unknown; content: Array<{ text: string }>; isError?: boolean }
 
     expect(result.isError).toBeUndefined()
@@ -109,6 +113,7 @@ describe('send_invoice_email tool', () => {
       subject: 'Your invoice',
       message: 'Please find the invoice attached.',
       cc: ['second@billing.example.invalid'],
+      idempotencyKey: IDEMPOTENCY_KEY,
     })
 
     const config = getConfig('send_invoice_email')
@@ -116,11 +121,40 @@ describe('send_invoice_email tool', () => {
     expect(outputSchema.parse(sentResult)).toEqual(sentResult)
   })
 
+  test('reports a replayed send with distinct receipt text', async () => {
+    const { server, getHandler } = makeServerMock()
+    const replayedResult = { ...sentResult, replayed: true }
+    const sendInvoiceEmail = vi.fn().mockResolvedValue(replayedResult)
+    registerSendInvoiceEmailTool(server, withGuestState({ sendInvoiceEmail }))
+
+    const result = (await getHandler('send_invoice_email')({
+      id: 'inv_1',
+      recipientEmail: 'client@billing.example.invalid',
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })) as { structuredContent: unknown; content: Array<{ text: string }>; isError?: boolean }
+
+    expect(result.isError).toBeUndefined()
+    expect(result.structuredContent).toEqual(replayedResult)
+    expect(result.content[0]?.text).toBe('Invoice INV-0001 was already sent to client@billing.example.invalid (replayed).')
+  })
+
+  test('rejects a missing idempotencyKey', () => {
+    const { server, getConfig } = makeServerMock()
+    registerSendInvoiceEmailTool(server, withGuestState({ sendInvoiceEmail: vi.fn() }))
+    const inputSchema = z.object(getConfig('send_invoice_email').inputSchema)
+    const result = inputSchema.safeParse({ id: 'inv_1', recipientEmail: 'client@billing.example.invalid' })
+    expect(result.success).toBe(false)
+  })
+
   test('rejects an invalid recipient email', () => {
     const { server, getConfig } = makeServerMock()
     registerSendInvoiceEmailTool(server, withGuestState({ sendInvoiceEmail: vi.fn() }))
     const inputSchema = z.object(getConfig('send_invoice_email').inputSchema)
-    const result = inputSchema.safeParse({ id: 'inv_1', recipientEmail: 'not-an-email' })
+    const result = inputSchema.safeParse({
+      id: 'inv_1',
+      recipientEmail: 'not-an-email',
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })
     expect(result.success).toBe(false)
   })
 
@@ -132,6 +166,7 @@ describe('send_invoice_email tool', () => {
       id: 'inv_1',
       recipientEmail: 'client@billing.example.invalid',
       cc: Array.from({ length: 6 }, (_, index) => `cc${index}@billing.example.invalid`),
+      idempotencyKey: IDEMPOTENCY_KEY,
     })
     expect(result.success).toBe(false)
   })
@@ -150,6 +185,7 @@ describe('send_invoice_email tool', () => {
     const result = (await getHandler('send_invoice_email')({
       id: 'inv_1',
       recipientEmail: 'client@billing.example.invalid',
+      idempotencyKey: IDEMPOTENCY_KEY,
     })) as { content: Array<{ text: string }>; isError?: boolean }
     expect(parseToolErrorText(result).error.code).toBe('FORBIDDEN')
   })
@@ -163,6 +199,7 @@ describe('send_invoice_email tool', () => {
     const result = (await getHandler('send_invoice_email')({
       id: 'missing',
       recipientEmail: 'client@billing.example.invalid',
+      idempotencyKey: IDEMPOTENCY_KEY,
     })) as { content: Array<{ text: string }>; isError?: boolean }
     expect(parseToolErrorText(result).error.code).toBe('NOT_FOUND')
   })

@@ -1,0 +1,2 @@
+- [Recurring patterns](recurring-patterns.md) — rate-limit `unavailable`, missing MCP idempotency keys, OAuth scope rollout gaps
+- [Hotspots](hotspots.md) — internal MCP adapters and OAuth scope wiring produce the most findings

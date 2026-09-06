@@ -241,6 +241,7 @@ export interface SendInvoiceEmailInput {
   subject?: string
   message?: string
   cc?: string[]
+  idempotencyKey: string
 }
 
 export interface SendInvoiceEmailResult extends Record<string, unknown> {
@@ -249,6 +250,7 @@ export interface SendInvoiceEmailResult extends Record<string, unknown> {
   recipientEmail: string
   sentAt: string
   emailLogId: string | null
+  replayed: boolean
 }
 
 export interface RenewInvoiceLinkInput {

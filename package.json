@@ -1,7 +1,7 @@
 {
   "name": "invompt-mcp-workspace",
   "private": true,
-  "version": "0.11.6",
+  "version": "0.11.7",
   "packageManager": "npm@11.11.0",
   "repository": { "type": "git", "url": "https://github.com/Invompt/invompt-mcp.git" },
   "license": "MIT",
