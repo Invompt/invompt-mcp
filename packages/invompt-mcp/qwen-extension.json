@@ -1,6 +1,6 @@
 {
   "name": "invompt-local-beta",
-  "version": "0.11.6",
+  "version": "0.11.7",
   "description": "Template only; Qwen Code is not a supported Invompt local-beta runtime.",
   "skills": "skills",
   "agents": "agents"

@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 
 import type { InvomptService } from '../service.js'
+import { idempotencyKeySchema } from './client-schemas.js'
 import { formatToolError } from './format-error.js'
 
 const emailSchema = z.string().trim().pipe(z.email().max(320))
@@ -12,6 +13,7 @@ const sendInvoiceEmailOutputSchema = {
   recipientEmail: z.string(),
   sentAt: z.iso.datetime(),
   emailLogId: z.string().nullable(),
+  replayed: z.boolean(),
 }
 
 export function registerSendInvoiceEmailTool(server: McpServer, client: InvomptService): void {
@@ -29,23 +31,35 @@ export function registerSendInvoiceEmailTool(server: McpServer, client: InvomptS
         subject: z.string().trim().min(1).max(200).optional().describe('Optional email subject override.'),
         message: z.string().trim().min(1).max(2000).optional().describe('Optional plain-text message included with the email.'),
         cc: z.array(emailSchema).max(5).optional().describe('Optional additional recipients, up to 5 email addresses.'),
+        idempotencyKey: idempotencyKeySchema.describe(
+          'Stable per-send key. Reuse it only when retrying the same send so a host retry never emails the customer twice.',
+        ),
       },
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
-        idempotentHint: false,
+        idempotentHint: true,
         openWorldHint: true,
       },
     },
-    async ({ id, recipientEmail, recipientName, subject, message, cc }) => {
+    async ({ id, recipientEmail, recipientName, subject, message, cc, idempotencyKey }) => {
       try {
-        const result = await client.sendInvoiceEmail(id, { recipientEmail, recipientName, subject, message, cc })
+        const result = await client.sendInvoiceEmail(id, {
+          recipientEmail,
+          recipientName,
+          subject,
+          message,
+          cc,
+          idempotencyKey,
+        })
         return {
           structuredContent: result,
           content: [
             {
               type: 'text' as const,
-              text: `Invoice ${result.invoiceNumber} sent to ${result.recipientEmail}.`,
+              text: result.replayed
+                ? `Invoice ${result.invoiceNumber} was already sent to ${result.recipientEmail} (replayed).`
+                : `Invoice ${result.invoiceNumber} sent to ${result.recipientEmail}.`,
             },
           ],
         }

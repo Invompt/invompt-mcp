@@ -30,7 +30,7 @@ schemas remain final if the connected server exposes a newer compatible surface.
 | Find or read existing documents | Use `list_invoices` and `get_invoice` when exposed. |
 | Revise, translate, correct, or restyle an existing document | Use `update_invoice` when exposed. |
 | Renew an expired hosted link | Use `renew_invoice_link` when exposed. |
-| Send an existing invoice to a recipient by email | Use `send_invoice_email` when exposed; identify the invoice first, confirm the recipient, and never echo subject/message/cc back to the user. |
+| Send an existing invoice to a recipient by email | Use `send_invoice_email` when exposed; identify the invoice first, confirm the recipient, pass a stable idempotencyKey, and never echo subject/message/cc back to the user. |
 | Claim the active Guest workspace into an account | In Guest mode only, call `create_account_claim_link` once and present its expiring URL once. |
 | Archive an existing document | Confirm the target and authorization, then use `archive_invoice`. |
 | Read invoice defaults | Use `get_settings` only when exposed and invoice defaults matter. |

@@ -34,7 +34,7 @@ request, call it once and let the backend decide eligibility.
 | `archive_invoice` | Selected Guest or registered OAuth connection | Idempotent destructive soft delete | Archive with expected-version protection. |
 | `unarchive_invoice` | Selected Guest or registered OAuth connection | Idempotent restore | Restore an archived invoice with expected-version protection. |
 | `renew_invoice_link` | Selected Guest or registered OAuth connection | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
-| `send_invoice_email` | Registered account only; Guest returns `FORBIDDEN` | Non-idempotent send | Send the existing invoice as a server-rendered PDF attachment by email. Confirm the recipient first; returns only a delivery receipt, never PDF bytes or a hosted link. |
+| `send_invoice_email` | Registered account only; Guest returns `FORBIDDEN` | Idempotent send | Send the existing invoice as a server-rendered PDF attachment by email with a stable idempotencyKey. Confirm the recipient first; a retry with the same key returns `replayed: true` instead of emailing twice. Returns only a delivery receipt, never PDF bytes or a hosted link. |
 | `create_account_claim_link` | Guest account; transport-neutral | Non-idempotent mutation | On an explicit request, call once with no input from either connection mode. The backend decides eligibility. Present the short-lived browser claim URL once, explain expiry, and never log it. |
 | `get_settings` | Selected Guest or registered OAuth connection | Read-only | Read company, currency, numbering, and payment defaults. |
 | `update_settings` | Selected Guest or registered OAuth connection | Idempotent update | Partially update invoice defaults without inventing omitted values. |
@@ -54,7 +54,7 @@ one-off recipient data; never save silently. `create_invoice.clientId` assigns a
 saved client. For `update_invoice.clientId`, omission retains without resync, null detaches while
 keeping the snapshot, and a UUID assigns/resyncs the selected invoice.
 
-Invoice create/update/archive/link-renewal mutations require a stable `idempotencyKey` of 8–128 characters.
+Invoice create/update/archive/link-renewal/send mutations require a stable `idempotencyKey` of 8–128 characters.
 Update and archive also require that the latest invoice `version` be sent as `expectedVersion`.
 Invoice list and get results expose the current version. Settings updates are partial: omitted
 fields remain unchanged, company name and currency accept explicit null, and payment information

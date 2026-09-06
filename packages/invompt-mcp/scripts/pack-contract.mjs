@@ -373,8 +373,8 @@ export function verifyPackContract({
       onboardingSkill.includes('ChatGPT web, use remote OAuth only') &&
       onboardingSkill.includes('owns only the host server `invompt-local-beta`') &&
       onboardingSkill.includes('global `invompt` provider') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.6 setup --host codex') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.6 setup --host claude-code') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.7 setup --host codex') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.7 setup --host claude-code') &&
       onboardingSkill.includes('deliberate reset/recovery') &&
       onboardingSkill.includes('before another setup attempt') &&
       onboardingSkill.includes('binding.mode ===\nselectedMode') &&
