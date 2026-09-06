@@ -74,6 +74,15 @@ access to the invoicing workflow.
 10. Restore an archived invoice with unarchive_invoice only when the user
     explicitly identifies the target and asks to restore it.
 
+11. Send an invoice by email (send_invoice_email) — only when the user
+    explicitly asks to send or email an existing invoice. Identify the invoice
+    first with get_invoice or list_invoices, confirm the recipient email with
+    the user, then call send_invoice_email. It renders the invoice as a PDF
+    and emails it server-side; no PDF bytes or hosted link cross this
+    connection, only a delivery receipt. Guest connections receive
+    FORBIDDEN and must claim the workspace with
+    create_account_claim_link, then reconnect with OAuth, before sending.
+
 ## Key Concepts
 
 - InvoML (Invoice Markup Language): JSON format for invoice data. The system
@@ -96,7 +105,7 @@ access to the invoicing workflow.
   Use the locale supported by the live InvoML spec for dates, numbers, labels,
   currency formatting, and text direction.
 
-- The MCP surface exposes exactly 20 operational tools. create_account_claim_link
+- The MCP surface exposes exactly 21 operational tools. create_account_claim_link
   is a Guest-account-only, transport-neutral mutation that creates a short-lived browser link for an explicit
   account-claim request. It accepts no secrets or identifiers as input.
 
