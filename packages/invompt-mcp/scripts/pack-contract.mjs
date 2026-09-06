@@ -85,6 +85,7 @@ const OPERATIONAL_TOOL_SOURCES = Object.freeze([
   ['../mcp-core/src/tools/archive-invoice.ts', 'archive_invoice'],
   ['../mcp-core/src/tools/unarchive-invoice.ts', 'unarchive_invoice'],
   ['../mcp-core/src/tools/renew-invoice-link.ts', 'renew_invoice_link'],
+  ['../mcp-core/src/tools/send-invoice-email.ts', 'send_invoice_email'],
   ['../mcp-core/src/tools/create-account-claim-link.ts', 'create_account_claim_link'],
   ['../mcp-core/src/tools/get-settings.ts', 'get_settings'],
   ['../mcp-core/src/tools/update-settings.ts', 'update_settings'],
@@ -309,7 +310,7 @@ export function verifyPackContract({
   assert(!gettingStartedSource.includes('INVOMPT_GUEST_CREDENTIAL'), 'getting-started resource exposes no credential materialization instructions')
   assert(!gettingStartedSource.includes('~/.invompt/'), 'getting-started resource exposes no private credential path')
   assert(
-    gettingStartedSource.includes('exactly 20 operational tools') &&
+    gettingStartedSource.includes('exactly 21 operational tools') &&
       gettingStartedSource.includes('create_account_claim_link') &&
       gettingStartedSource.includes('Present claimUrl exactly once') &&
       gettingStartedSource.includes('GUEST_ACCOUNT_CLAIMED') &&
@@ -372,8 +373,8 @@ export function verifyPackContract({
       onboardingSkill.includes('ChatGPT web, use remote OAuth only') &&
       onboardingSkill.includes('owns only the host server `invompt-local-beta`') &&
       onboardingSkill.includes('global `invompt` provider') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.5 setup --host codex') &&
-      onboardingSkill.includes('npx --yes invompt-mcp@0.11.5 setup --host claude-code') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.6 setup --host codex') &&
+      onboardingSkill.includes('npx --yes invompt-mcp@0.11.6 setup --host claude-code') &&
       onboardingSkill.includes('deliberate reset/recovery') &&
       onboardingSkill.includes('before another setup attempt') &&
       onboardingSkill.includes('binding.mode ===\nselectedMode') &&
@@ -386,7 +387,7 @@ export function verifyPackContract({
       onboardingSkill.includes('`GUEST_ACCOUNT_CLAIMED`'),
     'onboarding skill requires explicit setup plus one-time, expiring Guest claim-link handling',
   )
-  assert(OPERATIONAL_TOOL_SOURCES.length === 20, 'pack-contract inspects the exact 20 operational tool sources')
+  assert(OPERATIONAL_TOOL_SOURCES.length === 21, 'pack-contract inspects the exact 21 operational tool sources')
   for (const [path, toolName] of OPERATIONAL_TOOL_SOURCES) {
     const contents = readText(path)
     assert(
@@ -403,7 +404,7 @@ export function verifyPackContract({
     ['skills/invompt-local-beta-invoice/references/mcp-surface.md', surfaceSource],
   ]) {
     assert(
-      contents.includes('exactly 20 operational tools') &&
+      contents.includes('exactly 21 operational tools') &&
       contents.includes('create_account_claim_link') &&
       contents.includes('GUEST_ACCOUNT_CLAIMED') &&
       contents.includes('backend decides'),

@@ -21,6 +21,7 @@ import { registerPreviewInvoiceTemplateExtractionTool } from './tools/preview-in
 import { registerSaveInvoiceAsTemplateTool } from './tools/save-invoice-as-template.js'
 import { registerPingTool } from './tools/ping.js'
 import { registerRenewInvoiceLinkTool } from './tools/renew-invoice-link.js'
+import { registerSendInvoiceEmailTool } from './tools/send-invoice-email.js'
 import { registerUnarchiveInvoiceTool } from './tools/unarchive-invoice.js'
 import { registerUpdateClientTool } from './tools/update-client.js'
 import { registerUpdateInvoiceTool } from './tools/update-invoice.js'
@@ -45,6 +46,7 @@ export function registerMcpSurface(server: McpRegistrar, service: InvomptService
   registerArchiveInvoiceTool(server, service)
   registerUnarchiveInvoiceTool(server, service)
   registerRenewInvoiceLinkTool(server, service)
+  registerSendInvoiceEmailTool(server, service)
   registerCreateAccountClaimLinkTool(server, service)
   registerGetSettingsTool(server, service)
   registerUpdateSettingsTool(server, service)

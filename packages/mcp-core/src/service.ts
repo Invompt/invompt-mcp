@@ -24,6 +24,8 @@ import type {
   PingResult,
   RenewInvoiceLinkInput,
   RenewInvoiceLinkResult,
+  SendInvoiceEmailInput,
+  SendInvoiceEmailResult,
   SettingsResult,
   UnarchiveInvoiceInput,
   UnarchiveInvoiceResult,
@@ -57,6 +59,7 @@ export interface InvomptService {
   archiveInvoice(id: string, input: ArchiveInvoiceInput): Promise<ArchiveInvoiceResult>
   unarchiveInvoice(id: string, input: UnarchiveInvoiceInput): Promise<UnarchiveInvoiceResult>
   renewInvoiceLink(id: string, input: RenewInvoiceLinkInput): Promise<RenewInvoiceLinkResult>
+  sendInvoiceEmail(id: string, input: SendInvoiceEmailInput): Promise<SendInvoiceEmailResult>
   createAccountClaimLink(): Promise<CreateAccountClaimLinkResult>
   getSettings(): Promise<SettingsResult>
   updateSettings(input: UpdateSettingsInput): Promise<UpdateSettingsResult>

@@ -235,6 +235,22 @@ export interface CreateAccountClaimLinkResult extends Record<string, unknown> {
   expiresAt: string
 }
 
+export interface SendInvoiceEmailInput {
+  recipientEmail: string
+  recipientName?: string
+  subject?: string
+  message?: string
+  cc?: string[]
+}
+
+export interface SendInvoiceEmailResult extends Record<string, unknown> {
+  invoiceId: string
+  invoiceNumber: string
+  recipientEmail: string
+  sentAt: string
+  emailLogId: string | null
+}
+
 export interface RenewInvoiceLinkInput {
   idempotencyKey: string
 }

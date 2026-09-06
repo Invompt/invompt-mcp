@@ -15,6 +15,7 @@ These values classify actual effects according to the current OpenAI plugin revi
 | `archive_invoice` | No | No | No | Changes private list state through a soft delete; the invoice remains viewable and `unarchive_invoice` reverses the operation. |
 | `unarchive_invoice` | No | No | No | Restores private list state without changing document content or publishing anything. |
 | `renew_invoice_link` | No | Yes | Yes | Publishes a replacement hosted review URL and revokes the previous public capability URL. |
+| `send_invoice_email` | No | Yes | No | Sends a server-rendered PDF of an existing invoice to an external email address; it does not overwrite or publish the invoice itself and returns only a delivery receipt. |
 | `create_account_claim_link` | No | No | No | Creates a short-lived sensitive capability inside the first-party account-claim flow; it does not publish or overwrite user data. |
 | `update_settings` | No | No | Yes | Overwrites private invoice defaults; omission is safe, but supplied fields have no exposed rollback. |
 | `create_client` | No | No | No | Creates a saved client inside the private workspace without publishing or replacing existing data. |
