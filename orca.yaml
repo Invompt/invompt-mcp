@@ -1,0 +1,6 @@
+# Orca IDE worktree config
+worktree:
+  sharedDirectories:
+    - node_modules
+    - packages/invompt-mcp/node_modules
+    - packages/mcp-core/node_modules

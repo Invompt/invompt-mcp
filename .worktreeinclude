@@ -1,0 +1,2 @@
+# Gitignored files copied into each Orca worktree.
+# No local env/secret files exist in this repo yet; add them here when created.
