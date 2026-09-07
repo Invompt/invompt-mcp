@@ -171,6 +171,51 @@ describe('send_invoice_email tool', () => {
     expect(result.success).toBe(false)
   })
 
+  test('drops cc entries equal to recipientEmail and dedupes remaining entries, case-insensitively', async () => {
+    const { server, getHandler } = makeServerMock()
+    const sendInvoiceEmail = vi.fn().mockResolvedValue(sentResult)
+    registerSendInvoiceEmailTool(server, withGuestState({ sendInvoiceEmail }))
+
+    await getHandler('send_invoice_email')({
+      id: 'inv_1',
+      recipientEmail: 'Client@Billing.example.invalid',
+      cc: [
+        'second@billing.example.invalid',
+        'SECOND@billing.example.invalid',
+        'client@billing.example.invalid',
+        'third@billing.example.invalid',
+      ],
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })
+
+    expect(sendInvoiceEmail).toHaveBeenCalledWith('inv_1', {
+      recipientEmail: 'Client@Billing.example.invalid',
+      recipientName: undefined,
+      subject: undefined,
+      message: undefined,
+      cc: ['second@billing.example.invalid', 'third@billing.example.invalid'],
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })
+  })
+
+  test('forwards cc as undefined when every entry was the recipient', async () => {
+    const { server, getHandler } = makeServerMock()
+    const sendInvoiceEmail = vi.fn().mockResolvedValue(sentResult)
+    registerSendInvoiceEmailTool(server, withGuestState({ sendInvoiceEmail }))
+
+    await getHandler('send_invoice_email')({
+      id: 'inv_1',
+      recipientEmail: 'client@billing.example.invalid',
+      cc: ['CLIENT@billing.example.invalid'],
+      idempotencyKey: IDEMPOTENCY_KEY,
+    })
+
+    expect(sendInvoiceEmail).toHaveBeenCalledWith(
+      'inv_1',
+      expect.objectContaining({ cc: undefined }),
+    )
+  })
+
   test('propagates FORBIDDEN for a Guest connection', async () => {
     const { server, getHandler } = makeServerMock()
     const client = withGuestState(
