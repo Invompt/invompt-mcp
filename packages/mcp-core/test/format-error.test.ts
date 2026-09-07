@@ -69,7 +69,7 @@ describe('formatToolError', () => {
   test('sanitizes a multi-line stack-trace-like message instead of forwarding it verbatim', () => {
     const stackLike = [
       'TypeError: Cannot read properties of undefined (reading \'id\')',
-      '    at Object.<anonymous> (/Users/ariel/Code/invompt/backend/api/invoices/handler.ts:42:17)',
+      '    at Object.<anonymous> (/srv/app/backend/api/invoices/handler.ts:42:17)',
       '    at processTicksAndRejections (node:internal/process/task_queues:95:5)',
     ].join('\n')
     const err = new InvomptApiError(stackLike, 'INTERNAL_ERROR', 500)
@@ -77,7 +77,7 @@ describe('formatToolError', () => {
     const text = result.content[0]?.text ?? ''
 
     expect(text).not.toContain('at Object.<anonymous>')
-    expect(text).not.toContain('/Users/ariel/Code/invompt/backend/api/invoices/handler.ts')
+    expect(text).not.toContain('/srv/app/backend/api/invoices/handler.ts')
 
     const parsed = JSON.parse(text) as { error: { code: string; message: string } }
     expect(parsed.error.code).toBe('INTERNAL_ERROR')
@@ -86,7 +86,7 @@ describe('formatToolError', () => {
   })
 
   test('sanitizes a single-line message carrying a credentialed URL', () => {
-    const err = new InvomptApiError('Connection failed: postgres://dbuser:s3cr3t@db.internal:5432/app', 'INTERNAL_ERROR')
+    const err = new InvomptApiError('Connection failed: postgres://dbuser:s3cr3t@127.0.0.1:5432/app', 'INTERNAL_ERROR')
     const result = formatToolError(err)
     const parsed = JSON.parse(result.content[0]?.text ?? '{}') as { error: { message: string } }
     expect(parsed.error.message).toBe('Unexpected error.')
