@@ -7,6 +7,30 @@ import { formatToolError } from './format-error.js'
 
 const emailSchema = z.string().trim().pipe(z.email().max(320))
 
+/**
+ * Drops any `cc` entry that matches `recipientEmail` case-insensitively, then dedupes the
+ * remaining entries case-insensitively (first occurrence wins), so a host that mis-parses
+ * "send to X and cc X" or repeats an address never turns one logical send into duplicate
+ * deliveries to the same address under one idempotency key.
+ */
+function normalizeCc(cc: string[] | undefined, recipientEmail: string): string[] | undefined {
+  if (!cc || cc.length === 0) return cc
+
+  const recipientKey = recipientEmail.trim().toLowerCase()
+  const seen = new Set<string>()
+  const deduped: string[] = []
+
+  for (const address of cc) {
+    const key = address.trim().toLowerCase()
+    if (key === recipientKey) continue
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(address)
+  }
+
+  return deduped.length > 0 ? deduped : undefined
+}
+
 const sendInvoiceEmailOutputSchema = {
   invoiceId: z.string(),
   invoiceNumber: z.string(),
@@ -49,7 +73,7 @@ export function registerSendInvoiceEmailTool(server: McpServer, client: InvomptS
           recipientName,
           subject,
           message,
-          cc,
+          cc: normalizeCc(cc, recipientEmail),
           idempotencyKey,
         })
         return {
