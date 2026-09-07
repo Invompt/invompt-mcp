@@ -15,7 +15,7 @@ server integration, or a test fake. The service interface is the dependency boun
 ```ts
 import { createMcpServer } from '@invompt/mcp-core'
 
-const server = createMcpServer(service, '0.11.5')
+const server = createMcpServer(service, '0.11.7')
 ```
 
 `service` must implement the exported `InvomptService` interface. The `version` argument becomes
@@ -23,9 +23,9 @@ the MCP server version reported during initialization.
 
 ## Contract surface
 
-The server registers 20 operational tools:
+The server registers 21 operational tools:
 
-- Invoice lifecycle: create, list, read, update, archive, unarchive, and renew hosted links.
+- Invoice lifecycle: create, list, read, update, archive, unarchive, renew hosted links, and send by email.
 - Invoice templates: list, read, preview extraction, and save from an invoice.
 - Clients: list, read, create, update, and archive.
 - Workspace operations: ping, read or update settings, and create an explicit account-claim link.
@@ -41,7 +41,7 @@ Implement the service methods in an adapter, then pass the adapter to `createMcp
 ```ts
 import { createMcpServer } from '@invompt/mcp-core'
 
-const mcp = createMcpServer(adapter, '0.11.5')
+const mcp = createMcpServer(adapter, '0.11.7')
 // Connect mcp to the adapter's chosen MCP transport.
 ```
 
