@@ -15,7 +15,7 @@ server integration, or a test fake. The service interface is the dependency boun
 ```ts
 import { createMcpServer } from '@invompt/mcp-core'
 
-const server = createMcpServer(service, '0.11.7')
+const server = createMcpServer(service, '0.11.8')
 ```
 
 `service` must implement the exported `InvomptService` interface. The `version` argument becomes
@@ -41,7 +41,7 @@ Implement the service methods in an adapter, then pass the adapter to `createMcp
 ```ts
 import { createMcpServer } from '@invompt/mcp-core'
 
-const mcp = createMcpServer(adapter, '0.11.7')
+const mcp = createMcpServer(adapter, '0.11.8')
 // Connect mcp to the adapter's chosen MCP transport.
 ```
 
