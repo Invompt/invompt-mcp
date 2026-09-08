@@ -10,7 +10,7 @@ is not an npm publish target and has no transport implementation dependency.
 
 The package exports these contract lists:
 
-- `EXPECTED_TOOL_NAMES`: all 20 operational tool names in registration order.
+- `EXPECTED_TOOL_NAMES`: all 21 operational tool names in registration order.
 - `OPERATIONAL_TOOL_NAMES`: the operational tool list used by contract checks.
 - `EXPECTED_RESOURCE_NAMES`: `getting-started` and `invoml-spec`.
 - `EXPECTED_PROMPT_NAMES`: `draft_invoice_invoml`.
