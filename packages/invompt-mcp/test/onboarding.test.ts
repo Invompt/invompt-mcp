@@ -9,7 +9,15 @@ import type { GuestApi } from '../src/onboarding/guest-api.js'
 import { createGuestApi } from '../src/onboarding/guest-api.js'
 import { configureHost, hostCommands, removeHost } from '../src/onboarding/host-config.js'
 import { createFileSecretStore, createKeychainSecretStore } from '../src/onboarding/secret-store.js'
-import { logout, reset, resolveGuestCredentialForBridge, setup, status } from '../src/onboarding/service.js'
+import {
+  cliFailureExitCode,
+  formatStatus,
+  logout,
+  reset,
+  resolveGuestCredentialForBridge,
+  setup,
+  status,
+} from '../src/onboarding/service.js'
 import { createAuthStateStore } from '../src/onboarding/state.js'
 import type { CommandRunner, SecretStore } from '../src/onboarding/types.js'
 
@@ -560,7 +568,8 @@ describe('macOS beta onboarding', () => {
     })
     expect(() => resolveGuestCredentialForBridge('codex', deps)).toThrow('Guest mode is not active')
     state.write({ ...state.read(), bindings: {} })
-    expect(() => resolveGuestCredentialForBridge('codex', deps)).toThrow('Guest mode is not active')
+    expect(() => resolveGuestCredentialForBridge('codex', deps)).toThrow(/needs reconciliation/)
+    expect(() => resolveGuestCredentialForBridge('codex', deps)).not.toThrow(/Guest mode is not active/)
   })
 
   test('restarts the bridge only through the explicitly requested host resolver', async () => {
@@ -751,5 +760,116 @@ describe('macOS beta onboarding', () => {
       { state, keychain, guestApi: guestApi(), runner: successfulRunner },
     )
     expect(state.read().guest.status).toBe('unavailable')
+  })
+
+  test('Guest setup without a host CLI stores the credential and stays honest about reconcile', async () => {
+    const state = stateFixture()
+    const file = secret('file')
+    const denied: SecretStore = {
+      backend: 'keychain',
+      read: () => {
+        throw new Error('locked')
+      },
+      write: () => {
+        throw new Error('locked')
+      },
+      remove: () => {},
+    }
+    let issued = 0
+    const error = await setup(
+      { mode: 'guest', host: 'codex', allowFileFallback: true },
+      {
+        state,
+        keychain: denied,
+        file,
+        guestApi: {
+          ...guestApi(),
+          issueCredential: async () => {
+            issued += 1
+            return credential
+          },
+        },
+        runner: async () => ({ ok: false, missingCommand: true }),
+      },
+    ).then(
+      () => undefined,
+      (caught: unknown) => caught,
+    )
+    expect(error).toBeInstanceOf(Error)
+    expect(issued).toBe(1)
+    expect(file.read()).toBe(credential)
+    expect(state.read()).toMatchObject({
+      selectedMode: 'guest',
+      guest: { status: 'active', backend: 'file' },
+      bindings: { codex: { mode: 'guest', status: 'needs_reconcile' } },
+    })
+    expect((error as Error).message).toMatch(/not installed or not on PATH/i)
+    expect((error as Error).message).toMatch(/Guest is already active/)
+    expect((error as Error).message).toMatch(/needs reconciliation/)
+    expect((error as Error).message).toMatch(/Do not reset/)
+    expect((error as Error).message).not.toMatch(/Guest mode is not active/)
+    expect(cliFailureExitCode(error)).toBe(2)
+    expect(resolveGuestCredentialForBridge('codex', { state, file }).credential).toBe(credential)
+    await setup(
+      { mode: 'guest', host: 'codex', allowFileFallback: true },
+      { state, keychain: denied, file, guestApi: guestApi(), runner: successfulRunner },
+    )
+    expect(state.read().bindings.codex?.status).toBe('active')
+    expect(issued).toBe(1)
+  })
+
+  test('serve stays usable for a current Guest binding that still needs host reconciliation', async () => {
+    const state = stateFixture()
+    const keychain = secret('keychain')
+    const deps = {
+      state,
+      keychain,
+      guestApi: guestApi(),
+      runner: async () => ({ ok: false, missingCommand: true }),
+    }
+    await setup({ mode: 'guest', host: 'claude-code' }, deps).catch(() => undefined)
+    expect(state.read().guest.status).toBe('active')
+    expect(state.read().bindings['claude-code']?.status).toBe('needs_reconcile')
+    expect(resolveGuestCredentialForBridge('claude-code', deps).guard()).toBe(true)
+    expect(() => resolveGuestCredentialForBridge('codex', deps)).toThrow(/needs reconciliation/)
+    expect(() => resolveGuestCredentialForBridge('codex', deps)).not.toThrow(/Guest mode is not active/)
+  })
+
+  test('human status names host bindings and tells the user not to reset a stored Guest', () => {
+    const rendered = formatStatus({
+      schemaVersion: 1,
+      epoch: 2,
+      selectedMode: 'guest',
+      guest: { status: 'active', backend: 'file' },
+      bindings: { codex: { epoch: 2, mode: 'guest', status: 'needs_reconcile' } },
+    })
+    expect(rendered).toContain('mode: guest')
+    expect(rendered).toContain('guest: active (file)')
+    expect(rendered).toContain('codex: needs_reconcile')
+    expect(rendered).toMatch(/Do not reset/)
+    expect(rendered).toMatch(/needs reconciliation/)
+  })
+
+  test('status --json remains available and human status uses the formatter', async () => {
+    const output: string[] = []
+    await runCli(['status'], {
+      write: (value) => output.push(value),
+      status: () => ({
+        schemaVersion: 1,
+        epoch: 2,
+        selectedMode: 'guest',
+        guest: { status: 'active', backend: 'file' },
+        bindings: { codex: { epoch: 2, mode: 'guest', status: 'needs_reconcile' } },
+      }),
+    })
+    expect(output.join('')).toContain('codex: needs_reconcile')
+    expect(output.join('')).toContain('Do not reset')
+  })
+
+  test('help names host CLI reconciliation instead of implying setup always finishes the binding', async () => {
+    const output: string[] = []
+    await runCli(['help'], { write: (value) => output.push(value) })
+    expect(output.join('')).toMatch(/host CLI/)
+    expect(output.join('')).toMatch(/needs reconciliation|needs_reconcile/)
   })
 })

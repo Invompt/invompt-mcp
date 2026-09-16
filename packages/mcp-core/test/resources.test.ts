@@ -100,6 +100,8 @@ describe('getting-started resource', () => {
     expect(text).toContain('latest version')
     expect(text).toContain('professional')
     expect(text).toContain('Omitted settings')
+    expect(text).toContain('saved client name')
+    expect(text).toContain('to.name')
     expect(text).toContain('no secrets or identifiers as input')
     expect(text).not.toContain('API key')
     expect(text).not.toContain('invompt.com/integrations')

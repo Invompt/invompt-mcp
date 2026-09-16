@@ -5,7 +5,14 @@ import { createInterface } from 'node:readline/promises'
 import { pathToFileURL } from 'node:url'
 
 import { startBridge } from './bridge.js'
-import { logout, reset, setup as setupOnboarding, status } from './onboarding/service.js'
+import {
+  cliFailureExitCode,
+  formatStatus,
+  logout,
+  status as readStatus,
+  reset,
+  setup as setupOnboarding,
+} from './onboarding/service.js'
 import type { AuthMode, HostName } from './onboarding/types.js'
 
 export type { JsonRpcMessage, MessageTransport, StartBridgeOptions } from './bridge.js'
@@ -34,6 +41,7 @@ export { createGuestApi, GuestApiError, INVOMPT_WEB_URL } from './onboarding/gue
 export {
   configureHost,
   HOSTED_MCP_URL,
+  hostCliBinary,
   hostCommands,
   LOCAL_BETA_MCP_SERVER_NAME,
   logoutHost,
@@ -46,7 +54,15 @@ export {
   KEYCHAIN_ACCOUNT,
   KEYCHAIN_SERVICE,
 } from './onboarding/secret-store.js'
-export { logout, reset, resolveGuestCredentialForBridge, setup, status } from './onboarding/service.js'
+export {
+  cliFailureExitCode,
+  formatStatus,
+  logout,
+  reset,
+  resolveGuestCredentialForBridge,
+  setup,
+  status,
+} from './onboarding/service.js'
 export { AUTH_STATE_FILE_NAME, authStatePath, createAuthStateStore, initialAuthState } from './onboarding/state.js'
 export type {
   AuthMode,
@@ -60,6 +76,7 @@ export type {
   HostName,
   SecretStore,
 } from './onboarding/types.js'
+export { OnboardingError } from './onboarding/types.js'
 
 function isDirectExecution(moduleUrl: string): boolean {
   const argvPath = process.argv[1]
@@ -120,6 +137,7 @@ export interface CliDependencies {
   readonly writeError?: (value: string) => void
   readonly setup?: typeof setupOnboarding
   readonly serve?: typeof startBridge
+  readonly status?: typeof readStatus
 }
 
 async function defaultPrompt(question: string): Promise<string> {
@@ -143,8 +161,10 @@ serve
   Start the Guest stdio bridge: serve --host claude-code|codex
 setup --mode guest|oauth --host claude-code|codex [--allow-file-fallback]
   Configure a host. File fallback is explicit and only available for Guest setup.
+  The selected host CLI must be on PATH. If it is missing, Guest may already be
+  stored and the host binding needs reconciliation; do not reset.
 status [--json]
-  Show redacted local authentication state.
+  Show redacted local authentication state, including host binding status.
 logout --host claude-code|codex
   Disconnect the selected host.
 reset --yes
@@ -192,9 +212,9 @@ export async function runCli(argv: readonly string[], dependencies: CliDependenc
   }
   if (command === 'status') {
     const flags = parseCommandFlags('status', args, { '--json': 'boolean' })
-    const current = status()
+    const current = (dependencies.status ?? readStatus)()
     if (flags.has('--json')) write(`${JSON.stringify(current)}\n`)
-    else write(`mode: ${current.selectedMode ?? 'undecided'}\nguest: ${current.guest.status}\n`)
+    else write(formatStatus(current))
     return
   }
   if (command === 'logout') {
@@ -214,6 +234,6 @@ export async function runCli(argv: readonly string[], dependencies: CliDependenc
 if (isDirectExecution(import.meta.url)) {
   runCli(process.argv.slice(2)).catch((error: unknown) => {
     process.stderr.write(`invompt-mcp failed: ${error instanceof Error ? error.message : 'Unknown startup failure'}\n`)
-    process.exitCode = 1
+    process.exitCode = cliFailureExitCode(error)
   })
 }

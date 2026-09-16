@@ -35,9 +35,14 @@ invompt-mcp logout --host claude-code|codex
 invompt-mcp reset --yes
 ```
 
-`serve` starts the Guest stdio bridge. `setup` selects Guest or OAuth and configures one host.
-`status` prints redacted local state. `logout` disconnects one host. `reset --yes` removes local
-authentication state and attempts Guest revocation.
+`serve` starts the Guest stdio bridge. It can start when Guest is already active even if a host
+binding still needs reconciliation. `setup` selects Guest or OAuth and configures one host CLI
+(`claude` or `codex`) that must be on PATH. `--allow-file-fallback` stores the Guest credential
+in a file when Keychain is unavailable; it does not skip host CLI configuration. If the host CLI
+is missing, setup exits 2, Guest stays stored, and the binding needs reconciliation. Do not
+reset. Install the host CLI and run setup again. `status` prints redacted local state, including
+bindings. `logout` disconnects one host. `reset --yes` removes local authentication state and
+attempts Guest revocation.
 
 ## Connection modes
 
@@ -58,9 +63,10 @@ fallback at `~/.invompt/guest-credential` is used. Non-secret state is stored at
 `~/.invompt/auth-state.json`. The CLI never puts credentials in a manifest or host configuration,
 derives a hardware fingerprint, or follows HTTP redirects.
 
-If a host command fails, setup records a reconciliation state and reports the error. A `401` means
-that the Guest credential is invalid or revoked; a `429` must honor `Retry-After`. Do not retry
-credential issuance silently or include credentials, tokens, or real invoice content in issues.
+If a host command fails, setup records `needs_reconcile` and reports the error. Guest may already
+be active. Exit code 2 means reconcile the host; do not reset. A `401` means that the Guest
+credential is invalid or revoked; a `429` must honor `Retry-After`. Do not retry credential
+issuance silently or include credentials, tokens, or real invoice content in issues.
 
 ## Development
 

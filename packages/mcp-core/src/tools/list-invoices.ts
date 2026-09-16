@@ -11,7 +11,12 @@ const listInvoicesOutputSchema = {
       invoiceNumber: z.string(),
       version: z.number().int().min(1),
       clientId: z.string().nullable().optional(),
-      clientName: z.string().nullable(),
+      clientName: z
+        .string()
+        .nullable()
+        .describe(
+          'Assigned saved-client name. Null when the invoice has only InvoML to.name and no saved clientId.',
+        ),
       total: z.number().nullable(),
       currency: z.string(),
       status: z.string(),
@@ -32,12 +37,15 @@ export function registerListInvoicesTool(server: McpServer, client: InvomptServi
     {
       title: 'List Invoices',
       description:
-        'Find, browse, show, search, or list invoices owned by the connected workspace. Returns summaries with invoice number, client, total, currency, status, and whether it was sent. Use get_invoice for full InvoML content.',
+        'Find, browse, show, search, or list invoices owned by the connected workspace. Returns summaries with invoice number, saved client name, total, currency, status, and whether it was sent. clientName is null for one-off InvoML to.name recipients with no saved client. Search matches invoice number or saved client name, not to.name. Use get_invoice for full InvoML content.',
       outputSchema: listInvoicesOutputSchema,
       inputSchema: {
         page: z.number().int().min(1).optional().describe('Page number (default 1)'),
         limit: z.number().int().min(1).max(50).optional().describe('Items per page (default 20, max 50)'),
-        search: z.string().optional().describe('Search by invoice number or client name'),
+        search: z
+          .string()
+          .optional()
+          .describe('Search by invoice number or saved client name. Does not match one-off InvoML to.name.'),
         status: z.enum(['approved', 'archived']).optional().describe('Filter by status'),
       },
       annotations: {
