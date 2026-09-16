@@ -30,7 +30,9 @@ reconfigure the separate global `invompt` provider; it remains hosted OAuth-only
 
 Treat a current host binding as usable only when its status is active, `binding.mode ===
 selectedMode`, and `binding.epoch === state.epoch`. Do not treat active status alone as usable. If
-state is undecided or the binding needs reconciliation, continue below.
+Guest is already active and the binding needs reconciliation, do not reset and do not say Guest
+mode is inactive; install the host CLI and rerun setup. If state is undecided or the binding needs
+reconciliation, continue below.
 
 ## 3. Ask exactly one mode question when undecided
 
@@ -71,7 +73,11 @@ workspace is an explicit browser-link flow; the backend decides eligibility.
   before another setup attempt, especially when the recorded secret backend is unavailable. Do not
   copy credentials between hosts.
 - `429`: respect `Retry-After` when supplied; do not retry before that time.
-- Host CLI failure: report that setup needs reconciliation; do not say the host is configured.
+- Host CLI failure: Guest may already be active and stored. The host binding needs
+  reconciliation. Do not reset. Do not say Guest mode is not active. Install the host CLI
+  (`claude` or `codex`) and rerun setup. `status --json` shows `needs_reconcile`. Serve can
+  start with the stored Guest credential; the host will not discover `invompt-local-beta`
+  until setup completes.
 
 For a deliberate local logout use `logout --host claude-code` or `logout --host codex`. For a full
 local reset, require `reset --yes`; it attempts Guest revocation, removes local state, and cleans

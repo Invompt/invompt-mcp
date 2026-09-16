@@ -13,11 +13,26 @@ function missingConfiguration(host: HostName, stderr: string | undefined): boole
     : /mcp server .*invompt-local-beta.*not found/i.test(stderr)
 }
 
+export function hostCliBinary(host: HostName): string {
+  return host === 'claude-code' ? 'claude' : 'codex'
+}
+
+function isMissingHostCli(result: CommandResult): boolean {
+  if (result.missingCommand) return true
+  return /\bENOENT\b|command not found/i.test(result.stderr ?? '')
+}
+
+function spawnErrorCode(error: Error | undefined): string | undefined {
+  if (!error || !('code' in error)) return undefined
+  return typeof error.code === 'string' ? error.code : undefined
+}
+
 function defaultRunner(command: string, args: readonly string[], interactive = false) {
   const result = spawnSync(command, args, interactive ? { stdio: 'inherit' } : { encoding: 'utf8' })
   return Promise.resolve({
     ok: result.status === 0,
     stderr: interactive ? undefined : typeof result.stderr === 'string' ? result.stderr : '',
+    missingCommand: spawnErrorCode(result.error) === 'ENOENT',
   })
 }
 
@@ -97,7 +112,9 @@ export async function configureHost(
     const interactive =
       mode === 'oauth' && ((host === 'claude-code' && args[1] === 'login') || (host === 'codex' && args[1] === 'add'))
     const result = await runConfiguredCommand(runner, command, args, interactive)
-    if (!result.ok && (index !== 0 || !missingConfiguration(host, result.stderr)))
+    if (result.ok) continue
+    if (isMissingHostCli(result)) throw new Error(`The ${host} CLI (${command}) is not installed or not on PATH.`)
+    if (index !== 0 || !missingConfiguration(host, result.stderr))
       throw new Error(
         `Unable to configure ${host} for ${mode} mode. Run setup again after resolving the host CLI error.`,
       )

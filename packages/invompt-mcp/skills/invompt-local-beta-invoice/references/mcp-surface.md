@@ -28,7 +28,7 @@ request, call it once and let the backend decide eligibility.
 |---|---|---|---|
 | `ping` | Selected Guest or registered OAuth connection | Read-only | Connectivity and connected workspace state. |
 | `create_invoice` | Selected Guest or registered OAuth connection | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, capability-backed preview URL, and version. |
-| `list_invoices` | Selected Guest or registered OAuth connection | Read-only | Search and page through owned invoices. |
+| `list_invoices` | Selected Guest or registered OAuth connection | Read-only | Search and page through owned invoices by invoice number or saved client name. `clientName` is null unless a saved client is assigned; one-off `to.name` is not indexed. |
 | `get_invoice` | Selected Guest or registered OAuth connection | Read-only | Retrieve full canonical InvoML. |
 | `update_invoice` | Selected Guest or registered OAuth connection | Idempotent update | Change content or template with expected-version protection, then return the canonical active capability-backed preview URL from authorized read-back. If no capability survives a renewal race, return `url: null` and `linkState: unavailable` without repeating the committed update; use `renew_invoice_link`. Use the explicit audited correction object only to repair a wrong persisted number. |
 | `archive_invoice` | Selected Guest or registered OAuth connection | Idempotent destructive soft delete | Archive with expected-version protection. |

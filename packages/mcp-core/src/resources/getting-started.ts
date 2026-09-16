@@ -48,9 +48,10 @@ access to the invoicing workflow.
    party object), use address { lines: [...] }, and omit unknown fields rather
    than guessing. Advanced tax fields belong in legacy serialized invoml.
 
-6. Browse invoices (list_invoices, get_invoice) — search existing invoices,
-   read their InvoML content and current version, use them as templates for new
-   ones.
+6. Browse invoices (list_invoices, get_invoice) — search by invoice number or
+   saved client name. clientName is null for one-off InvoML to.name recipients;
+   search does not match those names. Read full InvoML and the current version
+   with get_invoice, then reuse documents as templates.
 
 7. Update invoices (update_invoice) — modify InvoML content or change templates.
    Omitting clientId retains the link without resync, null detaches it while

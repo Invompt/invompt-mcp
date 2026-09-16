@@ -94,6 +94,9 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
 
 ## Manage Existing Documents
 
+- `list_invoices.search` matches invoice number or saved client name. One-off InvoML `to.name` is
+  not indexed and `clientName` is null; find those invoices by number or by listing without search,
+  then read `to.name` from `get_invoice`.
 - Retrieve canonical InvoML before editing when the current conversation does not already contain
   the latest document.
 - Use `update_invoice`, not `create_invoice`, for revisions to an identified document.

@@ -1,8 +1,16 @@
 import { createGuestApi, type GuestApi } from './guest-api.js'
-import { configureHost, logoutHost, removeHost } from './host-config.js'
+import { configureHost, hostCliBinary, logoutHost, removeHost } from './host-config.js'
 import { createFileSecretStore, createKeychainSecretStore, selectedSecretStore } from './secret-store.js'
 import { type AuthStateStore, bindHost, createAuthStateStore, selectMode } from './state.js'
-import type { AuthMode, CommandRunner, GuestBackend, HostName, SecretStore } from './types.js'
+import {
+  type AuthMode,
+  type AuthState,
+  type CommandRunner,
+  type GuestBackend,
+  type HostName,
+  OnboardingError,
+  type SecretStore,
+} from './types.js'
 
 export interface OnboardingDependencies {
   readonly state?: AuthStateStore
@@ -36,6 +44,57 @@ function storeFor(backend: GuestBackend, value: OnboardingDependencies): SecretS
     keychain: value.keychain ?? createKeychainSecretStore(),
     file: value.file ?? createFileSecretStore(),
   })
+}
+
+export function cliFailureExitCode(error: unknown): number {
+  return error instanceof OnboardingError ? error.exitCode : 1
+}
+
+export function formatStatus(current: {
+  selectedMode: AuthMode | null
+  guest: { status: string; backend?: GuestBackend }
+  bindings: AuthState['bindings']
+}): string {
+  const backend = current.guest.backend ? ` (${current.guest.backend})` : ''
+  const lines = [`mode: ${current.selectedMode ?? 'undecided'}`, `guest: ${current.guest.status}${backend}`]
+  for (const host of ['claude-code', 'codex'] as const) {
+    const binding = current.bindings[host]
+    if (binding) lines.push(`${host}: ${binding.status}`)
+  }
+  const needsReconcile = Object.values(current.bindings).some((binding) => binding?.status === 'needs_reconcile')
+  if (needsReconcile && current.guest.status === 'active') {
+    lines.push(
+      'note: Guest is already active. A host binding needs reconciliation. Do not reset. Install the host CLI and run setup again.',
+    )
+  } else if (needsReconcile) {
+    lines.push('note: a host binding needs reconciliation. Install the host CLI and run setup again.')
+  }
+  return `${lines.join('\n')}\n`
+}
+
+function guestBindingReadyForServe(current: AuthState, host: HostName): boolean {
+  const binding = current.bindings[host]
+  return (
+    current.selectedMode === 'guest' &&
+    current.guest.status === 'active' &&
+    Boolean(current.guest.backend) &&
+    binding?.mode === 'guest' &&
+    binding.epoch === current.epoch &&
+    (binding.status === 'active' || binding.status === 'needs_reconcile')
+  )
+}
+
+function hostReconcileError(options: SetupOptions, current: AuthState, cause: unknown): OnboardingError {
+  const causeMessage = cause instanceof Error ? cause.message : 'Unable to configure the host.'
+  const binary = hostCliBinary(options.host)
+  const guestLine =
+    options.mode === 'guest' && current.guest.status === 'active'
+      ? ` Guest is already active${current.guest.backend ? ` (backend: ${current.guest.backend})` : ''} and the ${options.host} binding needs reconciliation. Do not reset. Serve can start with this Guest credential; ${options.host} will not discover invompt-local-beta until setup completes. Inspect with status --json.`
+      : ` The ${options.host} binding needs reconciliation. Inspect with status --json.`
+  const nextStep = causeMessage.includes('not installed')
+    ? ` Install ${binary}, then run setup again.`
+    : ' Resolve the host CLI error and run setup again.'
+  return new OnboardingError(`${causeMessage}${guestLine}${nextStep}`, 2)
 }
 
 function setBindingStatus(
@@ -133,8 +192,9 @@ export async function setup(options: SetupOptions, deps: OnboardingDependencies 
       await configureHost(options.host, options.mode, packageVersion, deps.runner)
       state.write(bindHost(state.read(), options.host, 'active', options.mode))
     } catch (error) {
-      state.write(bindHost(state.read(), options.host, 'needs_reconcile', options.mode))
-      throw error
+      const next = bindHost(state.read(), options.host, 'needs_reconcile', options.mode)
+      state.write(next)
+      throw hostReconcileError(options, next, error)
     }
   })
 }
@@ -161,19 +221,24 @@ export function resolveGuestCredentialForBridge(
 } {
   const stateStore = deps.state ?? createAuthStateStore()
   const current = stateStore.read()
-  const binding = current.bindings[host]
-  if (
-    current.selectedMode !== 'guest' ||
-    current.guest.status !== 'active' ||
-    !current.guest.backend ||
-    !binding ||
-    binding.mode !== 'guest' ||
-    binding.status !== 'active' ||
-    binding.epoch !== current.epoch
-  ) {
+  if (!guestBindingReadyForServe(current, host)) {
+    const binding = current.bindings[host]
+    if (
+      current.selectedMode === 'guest' &&
+      current.guest.status === 'active' &&
+      current.guest.backend &&
+      (!binding || (binding.mode === 'guest' && binding.epoch === current.epoch))
+    ) {
+      throw new OnboardingError(
+        `Guest is already active, but the ${host} binding needs reconciliation. Install the host CLI and run invompt-mcp setup --mode guest --host ${host} again. Do not reset.`,
+        2,
+      )
+    }
     throw new Error('Guest mode is not active on this device. Run invompt-mcp setup --mode guest.')
   }
-  const credential = storeFor(current.guest.backend, deps).read()
+  const backend = current.guest.backend
+  if (!backend) throw new Error('Guest mode is not active on this device. Run invompt-mcp setup --mode guest.')
+  const credential = storeFor(backend, deps).read()
   if (!credential) throw new Error('The selected Guest credential is unavailable. Run invompt-mcp setup --mode guest.')
   const epoch = current.epoch
   return {
@@ -181,15 +246,7 @@ export function resolveGuestCredentialForBridge(
     epoch,
     guard: () => {
       const next = stateStore.read()
-      const nextBinding = next.bindings[host]
-      return (
-        next.selectedMode === 'guest' &&
-        next.guest.status === 'active' &&
-        next.epoch === epoch &&
-        nextBinding?.mode === 'guest' &&
-        nextBinding.status === 'active' &&
-        nextBinding.epoch === epoch
-      )
+      return guestBindingReadyForServe(next, host) && next.epoch === epoch
     },
   }
 }

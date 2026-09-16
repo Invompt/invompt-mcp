@@ -21,6 +21,17 @@ export interface AuthState {
 export interface CommandResult {
   readonly ok: boolean
   readonly stderr?: string
+  readonly missingCommand?: boolean
+}
+
+export class OnboardingError extends Error {
+  constructor(
+    message: string,
+    readonly exitCode = 1,
+  ) {
+    super(message)
+    this.name = 'OnboardingError'
+  }
 }
 
 export type CommandRunner = (command: string, args: readonly string[]) => Promise<CommandResult>

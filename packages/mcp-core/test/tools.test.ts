@@ -733,6 +733,23 @@ describe('list_invoices tool', () => {
     expect((server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toBe('list_invoices')
   })
 
+  test('documents that search and clientName use saved clients, not InvoML to.name', () => {
+    const { server } = makeServerMock()
+    const client = withGuestState({ listInvoices: vi.fn() }) as unknown as Parameters<
+      typeof registerListInvoicesTool
+    >[1]
+    registerListInvoicesTool(server, client)
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+      description: string
+      inputSchema: { search: { description?: string } }
+    }
+    expect(config.description).toMatch(/saved client name/)
+    expect(config.description).toMatch(/to\.name/)
+    expect(config.description).toMatch(/clientName is null/)
+    expect(config.inputSchema.search.description).toMatch(/saved client name/)
+    expect(config.inputSchema.search.description).toMatch(/to\.name/)
+  })
+
   test('calls client.listInvoices and returns structured content', async () => {
     const { server, getHandler } = makeServerMock()
     const client = withGuestState({
