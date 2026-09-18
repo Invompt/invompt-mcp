@@ -7,6 +7,11 @@
   Create, review, and manage Invompt invoices through an MCP connection.
 </div>
 
+> **Prefer the hosted connector**
+> [`com.invompt/invompt`](https://glama.ai/mcp/connectors/com.invompt/invompt)
+> -> `https://mcp.invompt.com/mcp` | Continue anonymously | review-before-send.
+> Local-beta/stdio here is secondary; Registry LIVE: `com.invompt/invompt`.
+
 <p align="center">
   <a href="packages/invompt-mcp/README.md">CLI reference</a>
   |
