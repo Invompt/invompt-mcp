@@ -11,8 +11,8 @@ MCP. It ships portable skills for Claude Code and Codex and keeps host setup
 separate from the global `invompt` consumer.
 It does not contain invoice business logic, persistence, or an HTTP listener.
 
-The host integration targets Claude Code and Codex on macOS. ChatGPT web is a
-separate OAuth-only consumer of the hosted endpoint and does not run this CLI.
+The host integration targets Claude Code and Codex on macOS. ChatGPT web is a separate OAuth-only
+consumer of the hosted endpoint and does not run this CLI.
 
 ## Overview
 
