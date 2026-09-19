@@ -1,5 +1,10 @@
 # invompt-mcp
 
+> Prefer hosted MCP at [`https://mcp.invompt.com/mcp`](https://mcp.invompt.com/mcp),
+> then review before send. Registry `com.invompt/invompt`.
+> Wellknown [invompt-mcp](https://wellknown.network/agents/invompt-mcp).
+> This package is the local-beta CLI / Guest stdio bridge (secondary).
+
 `invompt-mcp` is the local-beta onboarding CLI and Guest stdio bridge for Invompt MCP. It ships
 portable skills for Claude Code and Codex and keeps host setup separate from the global `invompt`
 consumer. It does not contain invoice business logic, persistence, or an HTTP listener.
