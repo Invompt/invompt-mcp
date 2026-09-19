@@ -1,19 +1,25 @@
 # invompt-mcp
 
-> **Product path (preferred):** Continue anonymously · [`https://mcp.invompt.com/mcp`](https://mcp.invompt.com/mcp) · review-before-send  
-> Canonical: *Turn AI-host work into invoices you review before send — Continue anonymously or OAuth via hosted MCP.*  
-> Registry [`com.invompt/invompt`](https://glama.ai/mcp/connectors/com.invompt/invompt) · [www.invompt.com](https://www.invompt.com) · [Wellknown](https://wellknown.network/agents/invompt-mcp)  
-> This package is the **local-beta** onboarding CLI / Guest stdio bridge (secondary). Prefer hosted MCP unless you specifically need Claude Code / Codex local setup.
+> Prefer hosted MCP: Continue anonymously at
+> [`https://mcp.invompt.com/mcp`](https://mcp.invompt.com/mcp), then review before
+> send. Registry `com.invompt/invompt`. Site [www.invompt.com](https://www.invompt.com).
+> Wellknown [invompt-mcp](https://wellknown.network/agents/invompt-mcp).
+> This package is the local-beta CLI / Guest stdio bridge (secondary).
 
-`invompt-mcp` is the local-beta onboarding CLI and Guest stdio bridge for Invompt MCP. It ships portable skills for Claude Code and Codex and keeps host setup separate from the global `invompt` consumer. It does not contain invoice business logic, persistence, or an HTTP listener.
+`invompt-mcp` is the local-beta onboarding CLI and Guest stdio bridge for Invompt
+MCP. It ships portable skills for Claude Code and Codex and keeps host setup
+separate from the global `invompt` consumer. It does not contain invoice business
+logic, persistence, or an HTTP listener.
 
-The host integration targets Claude Code and Codex on macOS. The hosted MCP endpoint is [`https://mcp.invompt.com/mcp`](https://mcp.invompt.com/mcp). ChatGPT web is a separate consumer of that endpoint (Continue anonymously or OAuth) and does not run this CLI.
+The host integration targets Claude Code and Codex on macOS. ChatGPT web is a
+separate OAuth-only consumer of the hosted endpoint and does not run this CLI.
 
 ## Overview
 
-Use this package when you want a **local** command to configure and inspect an Invompt MCP connection. For the default product path, connect your AI host to the hosted endpoint above instead. The local setup flow keeps Guest and OAuth modes explicit, and status output stays redacted.
+Use this package when you need local Claude Code / Codex setup. Prefer the hosted
+MCP path above for the default product experience.
 
-## Install (local-beta)
+## Install
 
 For the published prerelease channel, run the CLI without adding a global install:
 
@@ -21,7 +27,9 @@ For the published prerelease channel, run the CLI without adding a global instal
 npx --yes invompt-mcp@next setup --host codex --mode oauth
 ```
 
-Replace `codex` with `claude-code`, or `oauth` with `guest`. The CLI configures only the `invompt-local-beta` MCP identity. Check the registry metadata before relying on a feature that is newer than the published channel.
+Replace `codex` with `claude-code`, or `oauth` with `guest`. The CLI configures only
+the `invompt-local-beta` MCP identity. Check the registry metadata before relying
+on a feature that is newer than the published channel.
 
 ## Commands
 
@@ -33,19 +41,41 @@ invompt-mcp logout --host claude-code|codex
 invompt-mcp reset --yes
 ```
 
-`serve` starts the Guest stdio bridge. It can start when Guest is already active even if a host binding still needs reconciliation. `setup` selects Guest or OAuth and configures one host CLI (`claude` or `codex`) that must be on PATH. `--allow-file-fallback` stores the Guest credential in a file when Keychain is unavailable; it does not skip host CLI configuration. If the host CLI is missing, setup exits 2, Guest stays stored, and the binding needs reconciliation. Do not reset. Install the host CLI and run setup again. `status` prints redacted local state, including bindings. `logout` disconnects one host. `reset --yes` removes local authentication state and attempts Guest revocation.
+`serve` starts the Guest stdio bridge. It can start when Guest is already active
+even if a host binding still needs reconciliation. `setup` selects Guest or OAuth
+and configures one host CLI (`claude` or `codex`) that must be on PATH.
+`--allow-file-fallback` stores the Guest credential in a file when Keychain is
+unavailable; it does not skip host CLI configuration. If the host CLI is missing,
+setup exits 2, Guest stays stored, and the binding needs reconciliation. Do not
+reset. Install the host CLI and run setup again. `status` prints redacted local
+state, including bindings. `logout` disconnects one host. `reset --yes` removes
+local authentication state and attempts Guest revocation.
 
 ## Connection modes
 
-Guest mode uses a server-issued pseudonymous credential and the stdio bridge. OAuth mode configures the host for the hosted HTTPS MCP endpoint and browser sign-in. The modes are intentionally separate: selecting OAuth leaves any Guest credential dormant, and selecting Guest never converts or claims it.
+Guest mode uses a server-issued pseudonymous credential and the stdio bridge.
+OAuth mode configures the host for the hosted HTTPS MCP endpoint and browser
+sign-in. The modes are intentionally separate: selecting OAuth leaves any Guest
+credential dormant, and selecting Guest never converts or claims it.
 
-The packaged plugin identity is `invompt-local-beta`, with onboarding and invoice skills under the same namespace. It does not own the global `invompt-invoice`, `invompt-export`, or `invompt-health` discovery names.
+The packaged plugin identity is `invompt-local-beta`, with onboarding and invoice
+skills under the same namespace. It does not own the global `invompt-invoice`,
+`invompt-export`, or `invompt-health` discovery names.
 
 ## State and security
 
-Guest credentials use the macOS Keychain service `com.invompt.invompt-mcp` and account `guest-credential` by default. `--allow-file-fallback` is required before the restricted file fallback at `~/.invompt/guest-credential` is used. Non-secret state is stored at `~/.invompt/auth-state.json`. The CLI never puts credentials in a manifest or host configuration, derives a hardware fingerprint, or follows HTTP redirects.
+Guest credentials use the macOS Keychain service `com.invompt.invompt-mcp` and
+account `guest-credential` by default. `--allow-file-fallback` is required before
+the restricted file fallback at `~/.invompt/guest-credential` is used. Non-secret
+state is stored at `~/.invompt/auth-state.json`. The CLI never puts credentials in
+a manifest or host configuration, derives a hardware fingerprint, or follows HTTP
+redirects.
 
-If a host command fails, setup records `needs_reconcile` and reports the error. Guest may already be active. Exit code 2 means reconcile the host; do not reset. A `401` means that the Guest credential is invalid or revoked; a `429` must honor `Retry-After`. Do not retry credential issuance silently or include credentials, tokens, or real invoice content in issues.
+If a host command fails, setup records `needs_reconcile` and reports the error.
+Guest may already be active. Exit code 2 means reconcile the host; do not reset.
+A `401` means that the Guest credential is invalid or revoked; a `429` must honor
+`Retry-After`. Do not retry credential issuance silently or include credentials,
+tokens, or real invoice content in issues.
 
 ## Development
 
