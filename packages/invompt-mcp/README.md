@@ -27,8 +27,8 @@ For the published prerelease channel, run the CLI without adding a global instal
 npx --yes invompt-mcp@next setup --host codex --mode oauth
 ```
 
-Replace `codex` with `claude-code`, or `oauth` with `guest`. The CLI configures only
-the `invompt-local-beta` MCP identity. Check the registry metadata before relying
+Replace `codex` with `claude-code`, or `oauth` with `guest`. The CLI configures only the
+`invompt-local-beta` MCP identity. Check the registry metadata before relying
 on a feature that is newer than the published channel.
 
 ## Commands
