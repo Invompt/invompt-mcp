@@ -22,42 +22,36 @@
   <a href="packages/mcp-core/README.md">MCP contract</a>
 </p>
 
-Invompt MCP connects AI hosts to Invompt invoices. Prefer the hosted path above.
-This repository also ships a pre-1.0 local-beta CLI, portable host skills, and a
-Guest stdio bridge for Claude Code or Codex. Invoice rules, calculation,
-persistence, and hosted document links remain part of the Invompt service.
+Prefer the hosted path above. This repo also ships a pre-1.0 local-beta CLI and
+Guest stdio bridge for Claude Code or Codex (secondary).
 
 ## What it does
 
-- Turns AI-host context into invoices, quotes, estimates, and pro formas you review
-  before send.
-- Lists and updates invoices and saved clients through the MCP contract.
-- Hosted path: Continue anonymously or OAuth over HTTPS at mcp.invompt.com.
-- Secondary local-beta path: Guest stdio bridge or hosted OAuth via this package.
-- Keeps local setup state separate from the global hosted consumer.
-
-This package uses the isolated `invompt-local-beta` identity. ChatGPT web connects
-to the hosted endpoint with OAuth and does not run this local CLI.
+- Turns AI-host context into invoices you review before send.
+- Lists and updates invoices and clients through the MCP contract.
+- Hosted path: Continue anonymously or OAuth at mcp.invompt.com.
+- Secondary local-beta: Guest stdio or hosted OAuth via this package (`invompt-local-beta`).
 
 ## Quick start
 
-**Hosted (preferred):** point your host at
-[`https://mcp.invompt.com/mcp`](https://mcp.invompt.com/mcp), Continue anonymously
-(or OAuth), create or review an invoice, then review before send.
+**Hosted (preferred):** Continue anonymously at
+[`https://mcp.invompt.com/mcp`](https://mcp.invompt.com/mcp) (or OAuth), then review before send.
 
-**Local-beta (secondary):**
+Cursor `mcp.json` (HTTP only - no headers / API key):
 
-1. Choose a host and connection mode, then run the matching setup command. Use OAuth
-   for a browser sign-in, or Guest for a server-issued pseudonymous local credential.
+```json
+{
+  "mcpServers": {
+    "invompt": {
+      "type": "http",
+      "url": "https://mcp.invompt.com/mcp"
+    }
+  }
+}
+```
 
-   ```sh
-   npx --yes invompt-mcp@next setup --host codex --mode oauth
-   # Replace codex with claude-code, or oauth with guest.
-   ```
-
-2. Restart the selected host so it discovers `invompt-local-beta`.
-
-3. Ask the host to create or review an Invompt invoice.
+**Local-beta (secondary):** `npx --yes invompt-mcp@next setup --host codex --mode oauth`
+(replace `codex`/`oauth` with `claude-code`/`guest`). Restart the host, then review before send.
 
 ## Connection modes
 
