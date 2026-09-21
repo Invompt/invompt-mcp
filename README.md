@@ -35,6 +35,7 @@ stdio bridge are secondary development options.
 > Change the payment terms to 14 days.
 
 Review the document and its details before sending it to your client.
+
 Cursor `mcp.json` (HTTP only - no headers / API key):
 
 ```json
