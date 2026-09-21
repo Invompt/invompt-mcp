@@ -35,6 +35,21 @@ stdio bridge are secondary development options.
 > Change the payment terms to 14 days.
 
 Review the document and its details before sending it to your client.
+Cursor `mcp.json` (HTTP only - no headers / API key):
+
+```json
+{
+  "mcpServers": {
+    "invompt": {
+      "type": "http",
+      "url": "https://mcp.invompt.com/mcp"
+    }
+  }
+}
+```
+
+**Local-beta (secondary):** `npx --yes invompt-mcp@next setup --host codex --mode oauth`
+(replace `codex`/`oauth` with `claude-code`/`guest`). Restart the host, then review before send.
 
 ## Connection modes
 
