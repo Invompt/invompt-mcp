@@ -1,80 +1,77 @@
 # Invompt MCP
 
-Create invoices from your AI assistant and review them before sending.
+[![CI status][ci-badge]][ci]
+[![npm @next version][npm-badge]][npm]
+[![MCP Registry listing][registry-badge]][registry]
+[![Hosted MCP connector score on Glama][glama-badge]][glama]
+[![Awesome Remote MCP listing][awesome-badge]][awesome]
+[![MIT License][license-badge]][license]
 
-Start without creating an account. Create one later and keep all your invoices.
+Create and manage invoices from a conversation with your AI assistant. Review every detail before
+you share a document with a client.
+
+**[Install Invompt for your AI assistant](https://invompt.com/install)**
+
+Start without an account. Create one later to keep your invoices.
 
 ## Quick start
 
-1. Follow the [installation guide](https://invompt.com/install) for your AI assistant.
-2. Complete the OAuth connection in your browser. Choose **Continue without an account**,
-   **Sign in**, or **Create account**. **Deny** remains available.
-3. Return to your assistant and ask it to create an invoice.
+1. Open the [installation guide](https://invompt.com/install) and choose your AI assistant.
+2. Connect to Invompt in your browser. Choose **Continue without an account**, **Sign in**, or
+   **Create account**. You can also **Deny** the connection.
+3. Ask your assistant to draft an invoice, then review it before sharing.
 
-Hosted MCP server URL:
+The hosted connection uses OAuth, including when you start without an account. Your AI assistant
+handles the authorization flow.
+
+## From conversation to invoice
+
+1. **Describe the work.** Include the client, service, quantity, and rate; add tax or payment terms
+   when needed.
+2. **Review the draft.** Check the client, line items, totals, and dates. Ask for changes in the same
+   conversation.
+3. **Choose what happens next.** Open the hosted invoice to download its PDF. Sending by email
+   requires a registered account.
+
+> Draft an invoice from the project details we just discussed. Set payment terms to 14 days.
+
+## What it does
+
+Invompt creates invoices, quotes, estimates, and pro formas from a conversation. It can revise a
+selected document and reuse saved clients and business settings.
+
+## Hosted connection
+
+Use the hosted MCP server at:
 
 ```text
 https://mcp.invompt.com/mcp
 ```
 
-The hosted connection uses OAuth, including when you start without an account. Your AI tool handles
-the authorization flow. The hosted path is preferred; this repository's local-beta CLI and Guest
-stdio bridge are secondary development options.
-
-## What it does
-
-- Create invoices, quotes, estimates, and pro formas from a conversation.
-- Review a hosted invoice and revise the selected document.
-- Reuse saved clients and business settings.
-- Open the hosted invoice to download its PDF.
-
-## Try it
-
-> Create an invoice for Alex: 10 hours of design work at $80 per hour.
-
-> Change the payment terms to 14 days.
-
-Review the document and its details before sending it to your client.
-
-Cursor `mcp.json` (HTTP only - no headers / API key):
-
-```json
-{
-  "mcpServers": {
-    "invompt": {
-      "type": "http",
-      "url": "https://mcp.invompt.com/mcp"
-    }
-  }
-}
-```
-
-**Local-beta (secondary):** `npx --yes invompt-mcp@next setup --host codex --mode oauth`
-(replace `codex`/`oauth` with `claude-code`/`guest`). Restart the host, then review before send.
+The hosted OAuth connection is the recommended way to get started.
 
 ## Connection modes
 
-The hosted path is the recommended OAuth connection. The [local-beta CLI reference](packages/invompt-mcp/README.md)
-covers the secondary local Guest stdio bridge and its separate setup.
+The repository's local-beta CLI and Guest stdio bridge are secondary development options. See the
+[local-beta CLI reference](packages/invompt-mcp/README.md) for developer setup details.
 
 ## Accounts and access
 
-When you're ready, ask your connected assistant to help you create an Invompt account and keep your
-invoices. Open the link it provides and complete the account flow to keep the invoices made through
-your current connection. Creating an account elsewhere does not automatically find unrelated guest
-histories. Sending invoices by email requires a registered account.
+You can begin without an account. When you're ready, ask your connected assistant to help create an
+Invompt account and keep invoices made through your current connection. Open the link it provides
+and complete the account flow. Creating an account elsewhere does not automatically find unrelated
+guest histories. Sending invoices by email requires a registered account.
 
 ## Security
 
-The hosted connection uses your AI tool's OAuth flow. The local-beta CLI stores Guest credentials in
-the macOS Keychain by default; see its security guidance before using that secondary path.
+The hosted connection uses your AI assistant's OAuth flow. The local-beta CLI stores Guest
+credentials in the macOS Keychain by default; read its security guidance before using that option.
 
 ## Resources
 
+- [Installation guide](https://invompt.com/install)
 - [Hosted MCP endpoint](https://mcp.invompt.com/mcp)
 - [Model Context Protocol documentation](https://modelcontextprotocol.io/)
-
-- [Installation guide](https://invompt.com/install)
 - [Local-beta CLI reference](packages/invompt-mcp/README.md)
 - [MCP contract](packages/mcp-core/README.md)
 - [Contract testkit](packages/mcp-testkit/README.md)
@@ -86,3 +83,16 @@ the macOS Keychain by default; see its security guidance before using that secon
 ## License
 
 [MIT](LICENSE)
+
+[ci-badge]: https://github.com/Invompt/invompt-mcp/actions/workflows/ci.yml/badge.svg?branch=main
+[ci]: https://github.com/Invompt/invompt-mcp/actions/workflows/ci.yml
+[npm-badge]: https://img.shields.io/npm/v/invompt-mcp/next?label=npm%20%40next
+[npm]: https://www.npmjs.com/package/invompt-mcp?activeTab=versions
+[registry-badge]: https://img.shields.io/badge/MCP%20Registry-listed-brightgreen
+[registry]: https://registry.modelcontextprotocol.io/v0.1/servers/com.invompt%2Finvompt/versions/latest
+[glama-badge]: https://glama.ai/mcp/connectors/com.invompt/invompt/badges/score.svg
+[glama]: https://glama.ai/mcp/connectors/com.invompt/invompt
+[awesome-badge]: https://img.shields.io/badge/Awesome%20Remote%20MCP-Listed-brightgreen
+[awesome]: https://github.com/punkpeye/awesome-remote-mcp-servers#finance
+[license-badge]: https://img.shields.io/github/license/Invompt/invompt-mcp
+[license]: https://github.com/Invompt/invompt-mcp/blob/main/LICENSE

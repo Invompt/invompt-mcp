@@ -2,6 +2,10 @@
 
 Thanks for helping improve this public-development, pre-1.0 project.
 
+This repository covers the local-beta CLI and stdio bridge. For the hosted OAuth service, see the
+[installation guide](https://invompt.com/install) or [contact Invompt](https://www.invompt.com/contact)
+for product support.
+
 ## Before opening a pull request
 
 1. Keep changes focused and avoid adding customer data, real invoice amounts, client names, credentials, or generated private artifacts.
