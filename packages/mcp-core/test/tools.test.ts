@@ -21,6 +21,7 @@ import { registerUnarchiveInvoiceTool } from '../src/tools/unarchive-invoice.js'
 import { registerUpdateInvoiceTool } from '../src/tools/update-invoice.js'
 import { registerUpdateSettingsTool } from '../src/tools/update-settings.js'
 import { previewUrlSchema } from '../src/tools/preview-url-schema.js'
+import { invoiceTemplateProjectionSchema } from '../src/tools/template-schemas.js'
 
 type ToolHandler = (args: Record<string, unknown>) => Promise<unknown>
 type ToolOutputSchema = Record<string, z.ZodType> | z.ZodType
@@ -733,7 +734,7 @@ describe('list_invoices tool', () => {
     expect((server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toBe('list_invoices')
   })
 
-  test('documents that search and clientName use saved clients, not InvoML to.name', () => {
+  test('documents indexed saved-client and structured one-off names while excluding free-form content', () => {
     const { server } = makeServerMock()
     const client = withGuestState({ listInvoices: vi.fn() }) as unknown as Parameters<
       typeof registerListInvoicesTool
@@ -742,12 +743,24 @@ describe('list_invoices tool', () => {
     const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
       description: string
       inputSchema: { search: { description?: string } }
+      outputSchema: { invoices: { element: { shape: { clientName: { description?: string } } } } }
     }
-    expect(config.description).toMatch(/saved client name/)
-    expect(config.description).toMatch(/to\.name/)
-    expect(config.description).toMatch(/clientName is null/)
-    expect(config.inputSchema.search.description).toMatch(/saved client name/)
-    expect(config.inputSchema.search.description).toMatch(/to\.name/)
+    expect(config.description).toContain('assigned saved client or structured one-off InvoML to.name')
+    expect(config.description).toContain('arbitrary free-form to.content is not indexed')
+    expect(config.description).toContain('Search matches invoice number or indexed client name')
+    expect(config.description).toContain('Use get_invoice for full InvoML content')
+    expect(config.description).not.toContain('clientName is null for one-off')
+    expect(config.inputSchema.search.description).toContain('assigned saved client or structured one-off InvoML to.name')
+    expect(config.inputSchema.search.description).toContain('Arbitrary free-form to.content is not indexed')
+    expect(config.outputSchema.invoices.element.shape.clientName.description).toContain(
+      'assigned saved client or structured one-off InvoML to.name',
+    )
+    expect(config.outputSchema.invoices.element.shape.clientName.description).toContain(
+      'null when no indexed name is available',
+    )
+    expect(config.outputSchema.invoices.element.shape.clientName.description).not.toContain(
+      'Null when the invoice has only InvoML to.name',
+    )
   })
 
   test('calls client.listInvoices and returns structured content', async () => {
@@ -797,6 +810,56 @@ describe('get_invoice tool', () => {
     const client = withGuestState({ getInvoice: vi.fn() }) as unknown as Parameters<typeof registerGetInvoiceTool>[1]
     registerGetInvoiceTool(server, client)
     expect((server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toBe('get_invoice')
+  })
+
+  test('separates full-InvoML reuse from checksum-bound reusable templates', () => {
+    const { server } = makeServerMock()
+    const client = withGuestState({ getInvoice: vi.fn() }) as unknown as Parameters<typeof registerGetInvoiceTool>[1]
+    registerGetInvoiceTool(server, client)
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as { description: string }
+
+    expect(config.description).toContain('revisions, translations, and explicit duplication via create_invoice')
+    expect(config.description).not.toContain('duplication, or as a template')
+    expect(config.description).toContain('preview_invoice_template_extraction')
+    expect(config.description).toContain('review its included/excluded paths and proposed defaults')
+    expect(config.description).toContain('explicit confirmation')
+    expect(config.description).toContain('save_invoice_as_template')
+    expect(config.description).toContain('projection.checksum as the required projectionChecksum')
+    expect(config.description).toContain('TEMPLATE_PROJECTION_STALE')
+    expect(config.description).toContain('do not reuse the stale checksum')
+    expect(config.description).toContain('Line-item presets default off')
+    expect(config.description).toContain('excludes recipient identity, payment data, generated values, free-form content, and rendered HTML/CSS')
+  })
+
+  test('projection defaults reject recipient and free-form content', () => {
+    const projection = {
+      invoiceId: '22222222-2222-4222-8222-222222222222',
+      invoiceVersion: 3,
+      documentType: 'invoice',
+      html: '',
+      css: '',
+      defaultData: { meta: { currency: 'USD' } },
+      lineItemPresetMode: 'none',
+      assetManifest: [],
+      includedPaths: ['meta.currency'],
+      excludedPaths: [
+        { path: 'to', reason: 'recipient_identity' },
+        { path: 'notes', reason: 'free_form_content_requires_explicit_allowlist' },
+      ],
+      checksum: 'a'.repeat(64),
+      canonicalBytes: 200,
+      compilerVersion: '1.0',
+    } as const
+
+    expect(invoiceTemplateProjectionSchema.safeParse(projection).success).toBe(true)
+    expect(invoiceTemplateProjectionSchema.safeParse({
+      ...projection,
+      defaultData: { ...projection.defaultData, to: { name: 'Recipient' } },
+    }).success).toBe(false)
+    expect(invoiceTemplateProjectionSchema.safeParse({
+      ...projection,
+      defaultData: { ...projection.defaultData, notes: { content: 'Free-form content' } },
+    }).success).toBe(false)
   })
 
   test('calls client.getInvoice with id and returns structured content', async () => {
@@ -951,7 +1014,12 @@ describe('update_invoice tool', () => {
     expect(result.structuredContent).toEqual(unavailableResult)
     expect(normalizeOutputSchema(config.outputSchema).parse(unavailableResult)).toEqual(unavailableResult)
     expect(result.content[0]?.text).toContain('no active hosted link')
-    expect(result.content[0]?.text).toContain('renew_invoice_link')
+    expect(result.content[0]?.text).toContain(
+      'Use renew_invoice_link only when the user\'s intent requests a new hosted link',
+    )
+    expect(result.content[0]?.text).toContain(
+      'the committed update or missing read-back capability alone does not authorize publishing one',
+    )
   })
 
   test.each([
@@ -1067,6 +1135,23 @@ describe('update_invoice tool', () => {
 })
 
 describe('archive_invoice tool', () => {
+  test('describes retained workspace reads and revoked public links', () => {
+    const { server } = makeServerMock()
+    const client = withGuestState({ archiveInvoice: vi.fn() }) as unknown as Parameters<
+      typeof registerArchiveInvoiceTool
+    >[1]
+    registerArchiveInvoiceTool(server, client)
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+      description: string
+      annotations: { destructiveHint: boolean }
+    }
+
+    expect(config.annotations.destructiveHint).toBe(true)
+    expect(config.description).toContain('retains the invoice and its InvoML for authorized workspace reads')
+    expect(config.description).toContain('revokes its current hosted review and public PDF URL capability')
+    expect(config.description).toContain('Already downloaded or delivered PDF copies are immutable external copies')
+  })
+
   test('registers with correct name', () => {
     const { server } = makeServerMock()
     const client = withGuestState({ archiveInvoice: vi.fn() }) as unknown as Parameters<
@@ -1098,6 +1183,8 @@ describe('archive_invoice tool', () => {
       version: 2,
       replayed: false,
     })
+    expect(result.content[0]?.text).toContain('current hosted review and public PDF URL capability is revoked')
+    expect(result.content[0]?.text).toContain('Already downloaded or delivered PDF copies are unaffected')
     expect(archiveInvoice).toHaveBeenCalledWith('inv_1', {
       expectedVersion: 1,
       idempotencyKey: IDEMPOTENCY_KEY,
@@ -1331,6 +1418,43 @@ describe('get_invoice null branches', () => {
     const result = (await getHandler('get_invoice')({ id: 'inv_1' })) as { content: Array<{ text: string }> }
     expect(result.content[0]?.text).toContain('0')
   })
+
+  test('archived invoice without an active link must be restored before renewal', async () => {
+    const { server, getHandler } = makeServerMock()
+    const archivedDetail = {
+      invoice: { ...invoiceDetail.invoice, status: 'archived', url: null, linkState: 'unavailable' },
+    }
+    const client = withGuestState({
+      getInvoice: vi.fn().mockResolvedValue(archivedDetail),
+    }) as unknown as Parameters<typeof registerGetInvoiceTool>[1]
+    registerGetInvoiceTool(server, client)
+
+    const result = (await getHandler('get_invoice')({ id: 'inv_1' })) as { content: Array<{ text: string }> }
+
+    expect(result.content[0]?.text).toContain('is archived and has no active hosted link')
+    expect(result.content[0]?.text).toContain('former hosted URL remains revoked')
+    const text = result.content[0]?.text ?? ''
+    expect(text).toContain('unarchive_invoice to restore it only if the user requested restoration')
+    expect(text.indexOf('unarchive_invoice')).toBeLessThan(text.indexOf('after restoration'))
+    expect(text).toContain('after restoration, use renew_invoice_link only if the user\'s intent requests a new hosted link')
+  })
+
+  test('non-archived invoice without an active link can be renewed directly', async () => {
+    const { server, getHandler } = makeServerMock()
+    const unavailableDetail = {
+      invoice: { ...invoiceDetail.invoice, status: 'approved', url: null, linkState: 'unavailable' },
+    }
+    const client = withGuestState({
+      getInvoice: vi.fn().mockResolvedValue(unavailableDetail),
+    }) as unknown as Parameters<typeof registerGetInvoiceTool>[1]
+    registerGetInvoiceTool(server, client)
+
+    const result = (await getHandler('get_invoice')({ id: 'inv_1' })) as { content: Array<{ text: string }> }
+
+    expect(result.content[0]?.text).toContain('has no active hosted link')
+    expect(result.content[0]?.text).toContain('Use renew_invoice_link to issue a replacement only if the user\'s intent requests a new hosted link')
+    expect(result.content[0]?.text).not.toContain('unarchive_invoice')
+  })
 })
 
 describe('list_invoices zero total branch', () => {
@@ -1509,7 +1633,17 @@ describe('unarchive_invoice tool', () => {
     registerUnarchiveInvoiceTool(server, client)
 
     expect((server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toBe('unarchive_invoice')
-    expect((server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]).toEqual(
+    const config = (server.registerTool as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as {
+      description: string
+      annotations: { destructiveHint: boolean }
+    }
+    expect(config.annotations.destructiveHint).toBe(false)
+    expect(config.description).toContain('connected workspace')
+    expect(config.description).not.toContain('guest company')
+    expect(config.description).toContain('only when the user has requested restoration')
+    expect(config.description).toContain('does not revive its former hosted review or public PDF URL')
+    expect(config.description).toContain('renew_invoice_link after restoration only if the user also wants a new hosted link')
+    expect(config).toEqual(
       expect.objectContaining({
         annotations: expect.objectContaining({
           readOnlyHint: false,
@@ -1541,7 +1675,9 @@ describe('unarchive_invoice tool', () => {
 
     expect(result.isError).toBeUndefined()
     expect(result.structuredContent).toEqual(unarchiveResult)
-    expect(result.content[0]?.text).toBe('Unarchived invoice inv_1.')
+    expect(result.content[0]?.text).toContain('Unarchived invoice inv_1.')
+    expect(result.content[0]?.text).toContain('former hosted URL remains revoked')
+    expect(result.content[0]?.text).toContain('renew_invoice_link only if the user also wants a new hosted link')
     expect(unarchiveInvoice).toHaveBeenCalledWith('inv_1', {
       expectedVersion: 2,
       idempotencyKey: IDEMPOTENCY_KEY,

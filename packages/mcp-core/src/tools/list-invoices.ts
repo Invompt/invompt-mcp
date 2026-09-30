@@ -15,7 +15,7 @@ const listInvoicesOutputSchema = {
         .string()
         .nullable()
         .describe(
-          'Assigned saved-client name. Null when the invoice has only InvoML to.name and no saved clientId.',
+          'Indexed client name from an assigned saved client or structured one-off InvoML to.name; null when no indexed name is available.',
         ),
       total: z.number().nullable(),
       currency: z.string(),
@@ -37,7 +37,7 @@ export function registerListInvoicesTool(server: McpServer, client: InvomptServi
     {
       title: 'List Invoices',
       description:
-        'Find, browse, show, search, or list invoices owned by the connected workspace. Returns summaries with invoice number, saved client name, total, currency, status, and whether it was sent. clientName is null for one-off InvoML to.name recipients with no saved client. Search matches invoice number or saved client name, not to.name. Use get_invoice for full InvoML content.',
+        'Find, browse, show, search, or list invoices owned by the connected workspace. Returns summaries with invoice number, indexed client name, total, currency, status, and whether it was sent. The indexed client name may come from an assigned saved client or structured one-off InvoML to.name; arbitrary free-form to.content is not indexed. Search matches invoice number or indexed client name. Use get_invoice for full InvoML content.',
       outputSchema: listInvoicesOutputSchema,
       inputSchema: {
         page: z.number().int().min(1).optional().describe('Page number (default 1)'),
@@ -45,7 +45,7 @@ export function registerListInvoicesTool(server: McpServer, client: InvomptServi
         search: z
           .string()
           .optional()
-          .describe('Search by invoice number or saved client name. Does not match one-off InvoML to.name.'),
+          .describe('Search by invoice number or indexed client name from an assigned saved client or structured one-off InvoML to.name. Arbitrary free-form to.content is not indexed.'),
         status: z.enum(['approved', 'archived']).optional().describe('Filter by status'),
       },
       annotations: {

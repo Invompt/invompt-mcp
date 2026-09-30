@@ -18,7 +18,7 @@ export function registerArchiveInvoiceTool(server: McpServer, client: InvomptSer
     {
       title: 'Archive Invoice',
       description:
-        'Archive, remove from active lists, or soft-delete a clearly identified invoice owned by the connected workspace. The invoice remains viewable; financial documents are never permanently deleted.',
+        'Archive a clearly identified invoice owned by the connected workspace. This retains the invoice and its InvoML for authorized workspace reads and removes it from active lists, but revokes its current hosted review and public PDF URL capability. Unarchiving does not restore that URL; renew_invoice_link can issue a new one after restoration. Already downloaded or delivered PDF copies are immutable external copies and are unaffected.',
       outputSchema: archiveInvoiceOutputSchema,
       inputSchema: {
         id: z.string().min(1).describe('Invoice ID'),
@@ -27,7 +27,7 @@ export function registerArchiveInvoiceTool(server: McpServer, client: InvomptSer
       },
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: false,
       },
@@ -41,7 +41,7 @@ export function registerArchiveInvoiceTool(server: McpServer, client: InvomptSer
           content: [
             {
               type: 'text' as const,
-              text: `Archived invoice ${result.invoiceId}.`,
+              text: `Archived invoice ${result.invoiceId}. Its current hosted review and public PDF URL capability is revoked. Already downloaded or delivered PDF copies are unaffected.`,
             },
           ],
         }

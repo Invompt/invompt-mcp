@@ -37,7 +37,7 @@ export interface InvoiceListItem {
   invoiceNumber: string
   version: number
   clientId: string | null
-  /** Assigned saved-client name. Null for one-off InvoML to.name recipients. */
+  /** Indexed name from an assigned saved client or structured one-off InvoML to.name; null when no indexed name is available. */
   clientName: string | null
   total: number | null
   currency: string

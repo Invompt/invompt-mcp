@@ -76,7 +76,9 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
    - use the current local date when no issue date is provided;
    - normalize `meta.locale` as BCP 47 and preserve the user's content language;
    - use `invoice`, `quote`, or `estimate` according to user intent; use `quote` for pro formas;
-   - put an explicitly provided recipient in `to.content`; never invent a generic `client` field;
+   - when the user provides a structured recipient name and the live schema supports it, put that
+     name in `to.name`; preserve arbitrary user-authored free-form recipient content in `to.content`;
+     never invent recipient details or a generic `client` field;
    - keep billable work in `items` and let Invompt calculate totals;
    - use quantity `1` for an explicitly stated flat amount;
    - put an explicitly paid amount in root-level `prepaidAmount`, never inside `totals`;
@@ -94,9 +96,9 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
 
 ## Manage Existing Documents
 
-- `list_invoices.search` matches invoice number or saved client name. One-off InvoML `to.name` is
-  not indexed and `clientName` is null; find those invoices by number or by listing without search,
-  then read `to.name` from `get_invoice`.
+- `list_invoices.search` matches invoice number or indexed client name. That name may come from an
+  assigned saved client or structured one-off InvoML `to.name`. Arbitrary free-form `to.content` is
+  not indexed or searchable. Use `get_invoice` for full InvoML content.
 - Retrieve canonical InvoML before editing when the current conversation does not already contain
   the latest document.
 - Use `update_invoice`, not `create_invoice`, for revisions to an identified document.
@@ -110,13 +112,20 @@ success, stop using the former Guest credential when it returns `GUEST_ACCOUNT_C
 - `update_invoice` commits the document mutation independently of capability lookup. Normally,
   `linkState: active` returns the canonical facts and a capability-backed hosted preview `url`.
   `linkState: unavailable` with `url: null` confirms the same mutation committed but no active
-  capability survived read-back; do not repeat the update. Use `renew_invoice_link` with a stable
-  idempotency key.
-- If `get_invoice` reports no active hosted link, use `renew_invoice_link` with a stable
-  idempotency key. Renewal rotates only the 72-hour public capability and does not revise the
-  invoice or require `expectedVersion`.
-- Treat archive as destructive even when implemented as a soft delete. Require an identified target
-  and clear user authorization.
+  capability survived read-back; do not repeat the update. Renew the public capability only when
+  the user's intent requests a new hosted link; the update or missing read-back capability alone
+  does not authorize publishing one. Use `renew_invoice_link` with a stable idempotency key.
+- If `get_invoice` reports no active hosted link for a non-archived invoice, use `renew_invoice_link`
+  only when the user's intent requests a new hosted link, with a stable idempotency key. For an
+  archived invoice, use `unarchive_invoice` only when the user explicitly asks to restore it, then
+  renew only if the user's intent requests a new hosted URL. A read or restoration alone does not
+  authorize publishing a new public capability. Renewal rotates only the 72-hour public capability
+  and does not revise the invoice or require `expectedVersion`.
+- Treat archive as destructive even though it retains the invoice and its InvoML for authorized
+  workspace reads. Archiving removes it from active lists and revokes its current hosted review and
+  public PDF URL capability; unarchiving does not restore that URL. Already downloaded or delivered
+  PDF copies are immutable external copies and are unaffected. Require an identified target and clear
+  user authorization.
 - Saved client writes require stable idempotency keys. Reuse a key only for the same retry.
 - Use the latest client `version` as `expectedVersion` for updates and archive. Ask before allowing
   a duplicate or archiving.

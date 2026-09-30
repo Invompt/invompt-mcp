@@ -28,11 +28,11 @@ request, call it once and let the backend decide eligibility.
 |---|---|---|---|
 | `ping` | Selected Guest or registered OAuth connection | Read-only | Connectivity and connected workspace state. |
 | `create_invoice` | Selected Guest or registered OAuth connection | Idempotent create | Create a hosted document and receive its canonical number, status, amount, currency, capability-backed preview URL, and version. |
-| `list_invoices` | Selected Guest or registered OAuth connection | Read-only | Search and page through owned invoices by invoice number or saved client name. `clientName` is null unless a saved client is assigned; one-off `to.name` is not indexed. |
+| `list_invoices` | Selected Guest or registered OAuth connection | Read-only | Search and page through owned invoices by invoice number or indexed client name from an assigned saved client or structured one-off InvoML `to.name`. Arbitrary free-form `to.content` is not indexed or searchable. |
 | `get_invoice` | Selected Guest or registered OAuth connection | Read-only | Retrieve full canonical InvoML. |
-| `update_invoice` | Selected Guest or registered OAuth connection | Idempotent update | Change content or template with expected-version protection, then return the canonical active capability-backed preview URL from authorized read-back. If no capability survives a renewal race, return `url: null` and `linkState: unavailable` without repeating the committed update; use `renew_invoice_link`. Use the explicit audited correction object only to repair a wrong persisted number. |
+| `update_invoice` | Selected Guest or registered OAuth connection | Idempotent update | Change content or template with expected-version protection, then return the canonical active capability-backed preview URL from authorized read-back. If no capability survives a renewal race, return `url: null` and `linkState: unavailable` without repeating the committed update. Renew only when the user's intent requests a new hosted link; the update or missing read-back capability alone does not authorize publishing one. Use `renew_invoice_link` with a stable idempotency key; renewal does not revise the invoice. Use the explicit audited correction object only to repair a wrong persisted number. |
 | `archive_invoice` | Selected Guest or registered OAuth connection | Idempotent destructive soft delete | Archive with expected-version protection. |
-| `unarchive_invoice` | Selected Guest or registered OAuth connection | Idempotent restore | Restore an archived invoice with expected-version protection. |
+| `unarchive_invoice` | Selected Guest or registered OAuth connection | Idempotent restore | Restore an archived invoice only when the user requested restoration, with expected-version protection. |
 | `renew_invoice_link` | Selected Guest or registered OAuth connection | Idempotent capability rotation | Replace the hosted review URL for 72 hours without revising the invoice. |
 | `send_invoice_email` | Registered account only; Guest returns `FORBIDDEN` | Idempotent send | Send the existing invoice as a server-rendered PDF attachment by email with a stable idempotencyKey. Confirm the recipient first; a retry with the same key returns `replayed: true` instead of emailing twice. Returns only a delivery receipt, never PDF bytes or a hosted link. |
 | `create_account_claim_link` | Guest account; transport-neutral | Non-idempotent mutation | On an explicit request, call once with no input from either connection mode. The backend decides eligibility. Present the short-lived browser claim URL once, explain expiry, and never log it. |
@@ -73,8 +73,13 @@ Saved billing-party input follows the product contract: name 200 characters; ema
 2000; attention 200; tax ID, business number, and phone 100 each; website 500; two-letter country
 code; HTTP/HTTPS website URLs; and trimmed idempotency keys of 8–128 characters.
 Do not invent tools that the server does not list. PDF rendering is not a published
-`invompt-mcp` tool. Return capability-backed hosted invoice preview URLs; use `renew_invoice_link` when `get_invoice`
-reports no active link. The Web product owns preview and browser PDF download/print.
+`invompt-mcp` tool. Return capability-backed hosted invoice preview URLs. If an archived invoice has
+no active link, restore it with `unarchive_invoice` only when the user requested restoration, then
+call `renew_invoice_link` only when the user's intent requests a new hosted link. For a
+non-archived invoice without an active link, renewal is optional and only appropriate when the
+user's intent requests a new hosted link. A read or restoration alone never authorizes publishing
+a new public capability. Use a stable idempotency key; renewal does not revise the invoice. The
+Web product owns preview and browser PDF download/print.
 
 Account claim is link-first: `create_account_claim_link` accepts no secrets or identifiers and
 returns only `claimUrl` and `expiresAt`. Never include credentials, account IDs, claim IDs, nonces,

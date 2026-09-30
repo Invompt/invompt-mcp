@@ -20,7 +20,7 @@ const expectedAnnotations: Record<string, RequiredAnnotations> = {
   save_invoice_as_template: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   get_invoice: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   update_invoice: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
-  archive_invoice: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  archive_invoice: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   unarchive_invoice: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   renew_invoice_link: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
   send_invoice_email: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
