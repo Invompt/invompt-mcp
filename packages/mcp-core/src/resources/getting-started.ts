@@ -49,9 +49,20 @@ access to the invoicing workflow.
    than guessing. Advanced tax fields belong in legacy serialized invoml.
 
 6. Browse invoices (list_invoices, get_invoice) — search by invoice number or
-   saved client name. clientName is null for one-off InvoML to.name recipients;
-   search does not match those names. Read full InvoML and the current version
-   with get_invoice, then reuse documents as templates.
+   indexed client name from an assigned saved client or structured one-off
+   InvoML to.name. Arbitrary free-form to.content is not indexed or searchable.
+   Use get_invoice to read full InvoML and the current version. Preserve that fetched full InvoML for revisions,
+   translations, and explicit invoice duplication via create_invoice. For a
+   reusable workspace template, call preview_invoice_template_extraction on
+   the immutable invoice ID and version. Review the included and excluded paths
+   and proposed defaults with the user, then save only after explicit
+   confirmation using save_invoice_as_template. Pass the preview's
+   projection.checksum as the required projectionChecksum. The projection
+   excludes recipient identity, payment
+   data, generated values, free-form content, and rendered HTML/CSS. Line-item
+   presets default off and require explicit opt-in. If save returns
+   TEMPLATE_PROJECTION_STALE, preview again and repeat the review; do not reuse
+   the stale checksum.
 
 7. Update invoices (update_invoice) — modify InvoML content or change templates.
    Omitting clientId retains the link without resync, null detaches it while
@@ -62,18 +73,26 @@ access to the invoicing workflow.
    performs an authorized canonical get_invoice read-back and returns the
    active hosted preview URL with the updated invoice facts. If a capability
    renewal race leaves no active link, the update remains committed and returns
-   url: null with linkState: unavailable; use renew_invoice_link with a stable
-   idempotencyKey instead of repeating the update.
+   url: null with linkState: unavailable; do not repeat the update. Renew the
+   public capability only when the user's intent requests a new hosted link;
+   the update or missing read-back capability alone does not authorize
+   publishing one. Use renew_invoice_link with a stable idempotencyKey.
+   Renewal does not revise the invoice.
 
 8. Manage saved clients (get_client, create_client, update_client,
    archive_client). Client edits never rewrite historical invoice snapshots.
 
-9. Archive invoices (archive_invoice) — soft delete only after the user has
-   clearly identified and authorized the target. Send the latest version as
-   expectedVersion plus a stable idempotencyKey.
+9. Archive invoices (archive_invoice) — retain the invoice and its InvoML for
+   authorized workspace reads while removing it from active lists. Archiving
+   revokes its current hosted review and public PDF URL capability. Already
+   downloaded or delivered PDF copies are immutable external copies and are
+   unaffected. Require the user to clearly identify and authorize the target;
+   send the latest version as expectedVersion plus a stable idempotencyKey.
 
 10. Restore an archived invoice with unarchive_invoice only when the user
-    explicitly identifies the target and asks to restore it.
+    explicitly identifies the target and asks to restore it. This returns it
+    to active workspace lists but does not revive its former hosted URL. After
+    restoration, call renew_invoice_link if the user wants a new hosted link.
 
 11. Send an invoice by email (send_invoice_email) — only when the user
     explicitly asks to send or email an existing invoice. Identify the invoice
@@ -100,9 +119,13 @@ access to the invoicing workflow.
   detachable remittance stub and is opt-in; omit it from the document,
   style.order, and style.blocks unless the user explicitly asks for one.
 
-- Invoice URLs: Every invoice gets a capability-backed hosted preview URL for
-  viewing and browser-based PDF download. Return that URL instead of rendering
-  or writing a PDF locally.
+- Invoice URLs: An active invoice can have a capability-backed hosted preview
+  URL for viewing and browser-based PDF download. Return that URL instead of
+  rendering or writing a PDF locally. Archiving revokes the current hosted
+  review and public PDF URL capability, and unarchiving does not restore it.
+  Renew the link after restoration when a new hosted URL is wanted. Already
+  downloaded or delivered PDF copies are immutable external copies and are
+  unaffected.
 
 - Language and locale: Preserve the user's language in descriptions and notes.
   Use the locale supported by the live InvoML spec for dates, numbers, labels,

@@ -100,7 +100,7 @@ export function registerUpdateInvoiceTool(server: McpServer, client: InvomptServ
               text:
                 result.linkState === 'active'
                   ? `Updated invoice ${result.invoiceNumber} (${result.invoiceId}); status ${result.status}: ${result.url}`
-                  : `Updated invoice ${result.invoiceNumber} (${result.invoiceId}); status ${result.status}; no active hosted link. Use renew_invoice_link to issue a replacement.`,
+                  : `Updated invoice ${result.invoiceNumber} (${result.invoiceId}); status ${result.status}; no active hosted link. Use renew_invoice_link only when the user's intent requests a new hosted link; the committed update or missing read-back capability alone does not authorize publishing one.`,
             },
           ],
         }

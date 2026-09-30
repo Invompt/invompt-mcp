@@ -12,8 +12,8 @@ These values classify actual effects according to the current OpenAI plugin revi
 | `get_client` | Yes | No | No | Retrieves one saved client from the private workspace only. |
 | `create_invoice` | No | Yes | No | Creates a new hosted document and publicly reachable review URL; it does not overwrite existing data. |
 | `update_invoice` | No | Yes | Yes | Overwrites an existing hosted document, its template, recipient snapshot, or corrected number; the MCP surface exposes version protection but no revision rollback. |
-| `archive_invoice` | No | No | No | Changes private list state through a soft delete; the invoice remains viewable and `unarchive_invoice` reverses the operation. |
-| `unarchive_invoice` | No | No | No | Restores private list state without changing document content or publishing anything. |
+| `archive_invoice` | No | No | Yes | Retains the invoice for authorized workspace reads and removes it from active lists, but revokes the current hosted review/public PDF URL capability. The old capability cannot be restored through the exposed lifecycle; unarchive followed by renewal issues a different URL. Already downloaded or delivered PDF copies are immutable external copies and are unaffected. |
+| `unarchive_invoice` | No | No | No | Restores the invoice to active workspace lists without changing document content or reviving its former hosted URL. `renew_invoice_link` can issue a new URL after restoration. |
 | `renew_invoice_link` | No | Yes | Yes | Publishes a replacement hosted review URL and revokes the previous public capability URL. |
 | `send_invoice_email` | No | Yes | No | Sends a server-rendered PDF of an existing invoice to an external email address; it does not overwrite or publish the invoice itself and returns only a delivery receipt. |
 | `create_account_claim_link` | No | No | No | Creates a short-lived sensitive capability inside the first-party account-claim flow; it does not publish or overwrite user data. |

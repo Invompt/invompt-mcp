@@ -18,7 +18,7 @@ export function registerUnarchiveInvoiceTool(server: McpServer, client: InvomptS
     {
       title: 'Unarchive Invoice',
       description:
-        'Restore a clearly identified archived invoice owned by the connected guest company. The invoice returns to active lists without changing its document content.',
+        'Restore a clearly identified archived invoice owned by the connected workspace only when the user has requested restoration. The invoice returns to active lists without changing its document content. Restoration does not revive its former hosted review or public PDF URL; call renew_invoice_link after restoration only if the user also wants a new hosted link.',
       outputSchema: unarchiveInvoiceOutputSchema,
       inputSchema: {
         id: z.string().min(1).describe('Invoice ID'),
@@ -37,7 +37,10 @@ export function registerUnarchiveInvoiceTool(server: McpServer, client: InvomptS
         const result = await client.unarchiveInvoice(id, { expectedVersion, idempotencyKey })
         return {
           structuredContent: result,
-          content: [{ type: 'text' as const, text: `Unarchived invoice ${result.invoiceId}.` }],
+          content: [{
+            type: 'text' as const,
+            text: `Unarchived invoice ${result.invoiceId}. Its former hosted URL remains revoked; use renew_invoice_link only if the user also wants a new hosted link.`,
+          }],
         }
       } catch (error) {
         return formatToolError(error)
