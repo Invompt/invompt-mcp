@@ -57,7 +57,7 @@ jobs:
           sha512sum "$TARBALL" > release-artifacts/SHA512SUMS
           node -e "const fs=require('node:fs'); const p=require('./packages/invompt-mcp/package.json'); const pack=JSON.parse(fs.readFileSync('release-artifacts/pack.json','utf8')); if (!Array.isArray(pack)||pack.length!==1||pack[0].name!=='invompt-mcp'||pack[0].version!==p.version) process.exit(1); fs.writeFileSync('release-artifacts/release-metadata.json', JSON.stringify({name:p.name,version:p.version,filename:pack[0].filename,integrity:pack[0].integrity},null,2)+'\n')"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: invompt-mcp-0.11.8
           path: release-artifacts
